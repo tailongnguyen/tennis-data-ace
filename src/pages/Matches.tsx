@@ -1,9 +1,10 @@
 
-import { Button } from "@/components/ui/button";
+import { RecordMatchDialog } from "@/components/dialogs/RecordMatchDialog";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Matches = () => {
@@ -11,10 +12,7 @@ const Matches = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Matches</h1>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Record Match
-        </Button>
+        <RecordMatchDialog />
       </div>
       
       <Card>

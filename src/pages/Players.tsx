@@ -1,19 +1,17 @@
 
-import { Button } from "@/components/ui/button";
+import { AddPlayerDialog } from "@/components/dialogs/AddPlayerDialog";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 
 const Players = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Players</h1>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Player
-        </Button>
+        <AddPlayerDialog />
       </div>
       
       <Card>
