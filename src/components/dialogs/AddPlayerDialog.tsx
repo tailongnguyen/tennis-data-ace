@@ -91,7 +91,7 @@ export function AddPlayerDialog() {
             />
             <FormField
               control={form.control}
-              name="playingStyle"
+              name="playing_style"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Playing Style</FormLabel>

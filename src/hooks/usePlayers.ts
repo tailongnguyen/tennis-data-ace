@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Player {
   id: string;
@@ -14,6 +15,7 @@ interface Player {
 
 export const usePlayers = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: players = [], isLoading } = useQuery({
     queryKey: ["players"],
@@ -34,9 +36,16 @@ export const usePlayers = () => {
 
   const addPlayer = useMutation({
     mutationFn: async (player: { name: string; age: number; playing_style: string }) => {
+      if (!user) {
+        throw new Error("User must be logged in to add players");
+      }
+
       const { data, error } = await supabase
         .from("players")
-        .insert([{ ...player }])
+        .insert({
+          ...player,
+          user_id: user.id,
+        })
         .select()
         .single();
 
