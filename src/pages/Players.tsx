@@ -1,5 +1,6 @@
 
 import { AddPlayerDialog } from "@/components/dialogs/AddPlayerDialog";
+import { EditPlayerDialog } from "@/components/dialogs/EditPlayerDialog";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -65,9 +66,7 @@ const Players = () => {
                     <TableCell>{player.playing_style}</TableCell>
                     <TableCell>{player.ranking_points}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm">
-                        Edit
-                      </Button>
+                      <EditPlayerDialog player={player} />
                     </TableCell>
                   </TableRow>
                 ))

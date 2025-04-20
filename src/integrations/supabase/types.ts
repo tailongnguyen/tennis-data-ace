@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      matches: {
+        Row: {
+          created_at: string
+          id: string
+          location: string
+          match_date: string
+          match_type: string
+          player1_id: string
+          player2_id: string
+          score: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          location: string
+          match_date?: string
+          match_type: string
+          player1_id: string
+          player2_id: string
+          score: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          location?: string
+          match_date?: string
+          match_type?: string
+          player1_id?: string
+          player2_id?: string
+          score?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_player1_id_fkey"
+            columns: ["player1_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_player2_id_fkey"
+            columns: ["player2_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           age: number
@@ -24,7 +75,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
-          playing_style: string
+          playing_style?: string
           ranking_points?: number | null
           user_id: string
         }

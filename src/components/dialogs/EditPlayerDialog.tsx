@@ -5,12 +5,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { usePlayers } from "@/hooks/usePlayers";
-import { useAuth } from "@/contexts/AuthContext";
-import { PLAYING_STYLES } from "@/types/player";
+import { Player, PLAYING_STYLES } from "@/types/player";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const playerSchema = z.object({
@@ -23,47 +22,47 @@ const playerSchema = z.object({
 
 type PlayerFormValues = z.infer<typeof playerSchema>;
 
-export function AddPlayerDialog() {
+interface EditPlayerDialogProps {
+  player: Player;
+}
+
+export function EditPlayerDialog({ player }: EditPlayerDialogProps) {
   const [open, setOpen] = useState(false);
-  const { addPlayer } = usePlayers();
-  const { user } = useAuth();
+  const { updatePlayer } = usePlayers();
 
   const form = useForm<PlayerFormValues>({
     resolver: zodResolver(playerSchema),
     defaultValues: {
-      name: "",
-      age: "",
-      playing_style: "All-Court Player",
+      name: player.name,
+      age: String(player.age),
+      playing_style: player.playing_style,
     },
   });
 
   async function onSubmit(data: PlayerFormValues) {
-    if (!user) return;
-
     try {
-      await addPlayer.mutateAsync({
+      await updatePlayer.mutateAsync({
+        id: player.id,
         name: data.name,
         age: Number(data.age),
         playing_style: data.playing_style,
       });
       setOpen(false);
-      form.reset();
     } catch (error) {
-      console.error("Error adding player:", error);
+      console.error("Error updating player:", error);
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Player
+        <Button variant="ghost" size="icon">
+          <Pencil className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add New Player</DialogTitle>
+          <DialogTitle>Edit Player</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -121,7 +120,7 @@ export function AddPlayerDialog() {
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Add Player</Button>
+              <Button type="submit">Update Player</Button>
             </div>
           </form>
         </Form>

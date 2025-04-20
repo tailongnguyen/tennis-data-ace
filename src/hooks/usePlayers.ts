@@ -3,15 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface Player {
-  id: string;
-  name: string;
-  age: number;
-  playing_style: string;
-  ranking_points: number;
-  created_at: string;
-}
+import { Player } from "@/types/player";
 
 export const usePlayers = () => {
   const queryClient = useQueryClient();
@@ -62,9 +54,40 @@ export const usePlayers = () => {
     },
   });
 
+  const updatePlayer = useMutation({
+    mutationFn: async (player: { id: string; name: string; age: number; playing_style: string }) => {
+      if (!user) {
+        throw new Error("User must be logged in to update players");
+      }
+
+      const { data, error } = await supabase
+        .from("players")
+        .update({
+          name: player.name,
+          age: player.age,
+          playing_style: player.playing_style,
+        })
+        .eq('id', player.id)
+        .select()
+        .single();
+
+      if (error) {
+        toast.error("Failed to update player");
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["players"] });
+      toast.success("Player updated successfully");
+    },
+  });
+
   return {
     players,
     isLoading,
     addPlayer,
+    updatePlayer,
   };
 };
