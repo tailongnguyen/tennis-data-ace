@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,7 +26,7 @@ import {
   LogOut
 } from "lucide-react";
 
-const AppSidebar = () => {
+export const AppSidebar = () => {
   const navigate = useNavigate();
   const { state } = useSidebar();
   const { user, signOut } = useAuth();
@@ -128,5 +127,3 @@ const AppSidebar = () => {
     </Sidebar>
   );
 };
-
-export default AppSidebar;
