@@ -1,6 +1,7 @@
 
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Sidebar,
   SidebarContent,
@@ -22,53 +23,53 @@ import {
   BarChart3, 
   Swords, 
   FileDown, 
-  LogIn 
+  LogIn,
+  LogOut
 } from "lucide-react";
 
-// Define navigation items
-const navItems = [
-  {
-    title: "Dashboard",
-    icon: Home,
-    path: "/",
-  },
-  {
-    title: "Players",
-    icon: Users,
-    path: "/players",
-  },
-  {
-    title: "Matches",
-    icon: Swords,
-    path: "/matches",
-  },
-  {
-    title: "Rankings",
-    icon: TrophyIcon,
-    path: "/rankings",
-  },
-  {
-    title: "Analytics",
-    icon: BarChart3,
-    path: "/analytics",
-  },
-  {
-    title: "Export",
-    icon: FileDown,
-    path: "/export",
-  },
-  {
-    title: "Login",
-    icon: LogIn,
-    path: "/login",
-  },
-];
-
-export function AppSidebar() {
+const AppSidebar = () => {
   const navigate = useNavigate();
   const { state } = useSidebar();
+  const { user, signOut } = useAuth();
   const collapsed = state === "collapsed";
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
   
+  const navItems = [
+    {
+      title: "Dashboard",
+      icon: Home,
+      path: "/",
+    },
+    {
+      title: "Players",
+      icon: Users,
+      path: "/players",
+    },
+    {
+      title: "Matches",
+      icon: Swords,
+      path: "/matches",
+    },
+    {
+      title: "Rankings",
+      icon: TrophyIcon,
+      path: "/rankings",
+    },
+    {
+      title: "Analytics",
+      icon: BarChart3,
+      path: "/analytics",
+    },
+    {
+      title: "Export",
+      icon: FileDown,
+      path: "/export",
+    },
+  ];
+
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
@@ -102,11 +103,29 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="p-4">
         <div className="text-sm text-muted-foreground">
-          {!collapsed && <span>Tennis Tracker v1.0</span>}
+          {user ? (
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              onClick={handleSignOut}
+            >
+              <LogOut className="mr-2 h-5 w-5" />
+              <span>Sign Out</span>
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              onClick={() => navigate("/login")}
+            >
+              <LogIn className="mr-2 h-5 w-5" />
+              <span>Sign In</span>
+            </Button>
+          )}
         </div>
       </SidebarFooter>
     </Sidebar>
   );
-}
+};
 
 export default AppSidebar;

@@ -7,15 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
-const Login = () => {
+const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { signIn } = useAuth();
+  const [fullName, setFullName] = useState("");
+  const { signUp } = useAuth();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signIn(email, password);
+      await signUp(email, password, fullName);
     } catch (error) {
       // Error is handled in the AuthContext
     }
@@ -25,12 +26,22 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Tennis Tracker</CardTitle>
-          <CardDescription className="text-center">Sign in to your account</CardDescription>
+          <CardTitle className="text-2xl text-center">Create Account</CardTitle>
+          <CardDescription className="text-center">Enter your details to register</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -51,20 +62,21 @@ const Login = () => {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">Sign In</Button>
+              <Button type="submit" className="w-full">Register</Button>
             </div>
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-          <div className="text-sm text-muted-foreground text-center">
-            <Link to="/register" className="text-primary hover:underline">
-              Create an account
+        <CardFooter className="flex justify-center">
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link to="/login" className="text-primary hover:underline">
+              Sign in
             </Link>
-          </div>
+          </p>
         </CardFooter>
       </Card>
     </div>
   );
 };
 
-export default Login;
+export default Register;
