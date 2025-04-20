@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { usePlayers } from "@/hooks/usePlayers";
 
 const matchSchema = z.object({
   player1: z.string().min(1, "Player 1 is required"),
@@ -23,6 +24,8 @@ type MatchFormValues = z.infer<typeof matchSchema>;
 
 export function RecordMatchDialog() {
   const [open, setOpen] = useState(false);
+  const { players } = usePlayers();
+  
   const form = useForm<MatchFormValues>({
     resolver: zodResolver(matchSchema),
     defaultValues: {
@@ -86,9 +89,20 @@ export function RecordMatchDialog() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Player 1</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter player 1 name" {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select player 1" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {players.map((player) => (
+                        <SelectItem key={player.id} value={player.id}>
+                          {player.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -99,9 +113,20 @@ export function RecordMatchDialog() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Player 2</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter player 2 name" {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select player 2" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {players.map((player) => (
+                        <SelectItem key={player.id} value={player.id}>
+                          {player.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
