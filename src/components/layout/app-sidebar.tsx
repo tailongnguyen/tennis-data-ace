@@ -35,6 +35,7 @@ const AppSidebar = () => {
 
   const handleSignOut = async () => {
     await signOut();
+    navigate("/login");
   };
   
   const navItems = [
