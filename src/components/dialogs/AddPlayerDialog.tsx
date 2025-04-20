@@ -1,43 +1,51 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import { toast } from "sonner";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { usePlayers } from "@/hooks/usePlayers";
+import { useAuth } from "@/contexts/AuthContext";
 
 const playerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   age: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, "Age must be a positive number"),
-  playingStyle: z.string().min(2, "Playing style must be at least 2 characters"),
+  playing_style: z.string().min(2, "Playing style must be at least 2 characters"),
 });
 
 type PlayerFormValues = z.infer<typeof playerSchema>;
 
 export function AddPlayerDialog() {
   const [open, setOpen] = useState(false);
+  const { addPlayer } = usePlayers();
+  const { user } = useAuth();
+
   const form = useForm<PlayerFormValues>({
     resolver: zodResolver(playerSchema),
     defaultValues: {
       name: "",
       age: "",
-      playingStyle: "",
+      playing_style: "",
     },
   });
 
   async function onSubmit(data: PlayerFormValues) {
+    if (!user) return;
+
     try {
-      // TODO: Add Supabase integration here
-      toast.success("Player added successfully");
+      await addPlayer.mutateAsync({
+        name: data.name,
+        age: Number(data.age),
+        playing_style: data.playing_style,
+      });
       setOpen(false);
       form.reset();
     } catch (error) {
-      toast.error("Failed to add player");
+      console.error("Error adding player:", error);
     }
   }
 

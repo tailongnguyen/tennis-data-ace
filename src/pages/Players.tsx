@@ -5,8 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
+import { usePlayers } from "@/hooks/usePlayers";
 
 const Players = () => {
+  const { players, isLoading } = usePlayers();
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -42,11 +45,33 @@ const Players = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                  No players added yet. Add your first player to get started.
-                </TableCell>
-              </TableRow>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-6">
+                    Loading players...
+                  </TableCell>
+                </TableRow>
+              ) : players.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                    No players added yet. Add your first player to get started.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                players.map((player) => (
+                  <TableRow key={player.id}>
+                    <TableCell>{player.name}</TableCell>
+                    <TableCell>{player.age}</TableCell>
+                    <TableCell>{player.playing_style}</TableCell>
+                    <TableCell>{player.ranking_points}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        Edit
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
