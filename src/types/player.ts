@@ -24,7 +24,7 @@ export interface Match {
   player2_id: string;
   match_type: 'singles' | 'doubles';
   score: string;
-  location?: string;
+  location: string; // Changed from optional to required to match DB schema
   match_date: string;
   created_at: string;
 }

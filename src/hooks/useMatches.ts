@@ -22,7 +22,11 @@ export const useMatches = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("matches")
-        .select("*, player1:player1_id(name), player2:player2_id(name)")
+        .select(`
+          *,
+          player1:players!matches_player1_id_fkey(name),
+          player2:players!matches_player2_id_fkey(name)
+        `)
         .order("match_date", { ascending: false });
 
       if (error) {
@@ -30,7 +34,7 @@ export const useMatches = () => {
         throw error;
       }
 
-      return data as (Match & { player1: { name: string }, player2: { name: string } })[];
+      return data as unknown as (Match & { player1: { name: string }, player2: { name: string } })[];
     },
   });
 
@@ -40,13 +44,17 @@ export const useMatches = () => {
         throw new Error("User must be logged in to add matches");
       }
 
+      // Ensure location is never undefined, use empty string instead
+      const dataToInsert = {
+        ...matchData,
+        location: matchData.location || "",
+        user_id: user.id,
+        match_date: new Date().toISOString(),
+      };
+
       const { data, error } = await supabase
         .from("matches")
-        .insert({
-          ...matchData,
-          user_id: user.id,
-          match_date: new Date().toISOString(),
-        })
+        .insert(dataToInsert)
         .select()
         .single();
 
