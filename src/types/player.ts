@@ -17,3 +17,14 @@ export interface Player {
   ranking_points: number;
   created_at: string;
 }
+
+export interface Match {
+  id: string;
+  player1_id: string;
+  player2_id: string;
+  match_type: 'singles' | 'doubles';
+  score: string;
+  location?: string;
+  match_date: string;
+  created_at: string;
+}

@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -30,6 +31,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { usePlayers } from "@/hooks/usePlayers";
+import { useMatches } from "@/hooks/useMatches";
 
 // Helper to check for winner for a single set
 function getSetWinner(p1Score: string, p2Score: string): "p1" | "p2" | null {
@@ -61,6 +63,7 @@ type MatchFormValues = z.infer<typeof matchSchema>;
 export function RecordMatchDialog() {
   const [open, setOpen] = useState(false);
   const { players } = usePlayers();
+  const { addMatch } = useMatches();
 
   // Represent each set as [p1, p2] score
   const [setScores, setSetScores] = useState<{ p1: string; p2: string }[]>(
@@ -95,12 +98,19 @@ export function RecordMatchDialog() {
     }
 
     try {
-      // TODO: Add Supabase integration here
-      toast.success("Match recorded successfully");
+      await addMatch.mutateAsync({
+        player1_id: data.player1,
+        player2_id: data.player2,
+        match_type: data.matchType as 'singles' | 'doubles',
+        score: scoreString,
+        location: data.location,
+      });
+      
       setOpen(false);
       form.reset();
       resetSets();
     } catch (error) {
+      console.error("Error submitting match:", error);
       toast.error("Failed to record match");
     }
   }
@@ -145,6 +155,9 @@ export function RecordMatchDialog() {
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Record New Match</DialogTitle>
+          <DialogDescription>
+            Fill in the match details and scores below.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form

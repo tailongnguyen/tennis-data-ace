@@ -6,8 +6,34 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
+import { useMatches } from "@/hooks/useMatches";
+import { format } from "date-fns";
 
 const Matches = () => {
+  const { matches, isLoading } = useMatches();
+  const [filterType, setFilterType] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredMatches = matches.filter(match => {
+    // Filter by match type
+    if (filterType !== "all" && match.match_type !== filterType) {
+      return false;
+    }
+    
+    // Filter by search term
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const hasPlayer = match.player1?.name?.toLowerCase().includes(searchLower) || 
+                        match.player2?.name?.toLowerCase().includes(searchLower);
+      const hasLocation = match.location?.toLowerCase().includes(searchLower);
+      
+      return hasPlayer || hasLocation;
+    }
+    
+    return true;
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -27,9 +53,15 @@ const Matches = () => {
               <Input
                 placeholder="Search matches..."
                 className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Select defaultValue="all">
+            <Select 
+              defaultValue="all"
+              value={filterType}
+              onValueChange={setFilterType}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Match Type" />
               </SelectTrigger>
@@ -39,7 +71,6 @@ const Matches = () => {
                 <SelectItem value="doubles">Doubles</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline">Filter</Button>
           </div>
           
           <Table>
@@ -50,15 +81,36 @@ const Matches = () => {
                 <TableHead>Opponent(s)</TableHead>
                 <TableHead>Score</TableHead>
                 <TableHead>Location</TableHead>
-                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                  No match records yet. Record your first match to see it here.
-                </TableCell>
-              </TableRow>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-6">
+                    Loading matches...
+                  </TableCell>
+                </TableRow>
+              ) : filteredMatches.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                    {matches.length === 0 
+                      ? "No match records yet. Record your first match to see it here."
+                      : "No matches found matching your filters."}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredMatches.map((match) => (
+                  <TableRow key={match.id}>
+                    <TableCell>
+                      {format(new Date(match.match_date), 'MMM d, yyyy')}
+                    </TableCell>
+                    <TableCell>{match.player1?.name || "Unknown"}</TableCell>
+                    <TableCell>{match.player2?.name || "Unknown"}</TableCell>
+                    <TableCell>{match.score}</TableCell>
+                    <TableCell>{match.location || "-"}</TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
