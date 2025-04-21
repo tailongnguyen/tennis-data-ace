@@ -30,6 +30,7 @@ export const useMatches = () => {
         .order("match_date", { ascending: false });
 
       if (error) {
+        console.error("Error fetching matches:", error);
         toast.error("Failed to fetch matches");
         throw error;
       }
@@ -41,12 +42,16 @@ export const useMatches = () => {
   const addMatch = useMutation({
     mutationFn: async (matchData: CreateMatchData) => {
       if (!user) {
+        console.error("User not logged in");
         throw new Error("User must be logged in to add matches");
       }
 
       // Ensure location is never undefined, use empty string instead
       const dataToInsert = {
-        ...matchData,
+        player1_id: matchData.player1_id,
+        player2_id: matchData.player2_id,
+        match_type: matchData.match_type,
+        score: matchData.score,
         location: matchData.location || "",
         user_id: user.id,
         match_date: new Date().toISOString(),
@@ -54,18 +59,24 @@ export const useMatches = () => {
 
       console.log("Attempting to insert match data:", dataToInsert);
 
-      const { data, error } = await supabase
-        .from("matches")
-        .insert(dataToInsert)
-        .select()
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from("matches")
+          .insert(dataToInsert)
+          .select()
+          .single();
 
-      if (error) {
-        console.error("Error adding match:", error);
+        if (error) {
+          console.error("Error adding match:", error);
+          throw error;
+        }
+
+        console.log("Match added successfully:", data);
+        return data;
+      } catch (error) {
+        console.error("Exception adding match:", error);
         throw error;
       }
-
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matches"] });

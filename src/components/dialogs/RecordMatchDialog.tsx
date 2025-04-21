@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -110,7 +111,7 @@ export function RecordMatchDialog() {
         player2_id: data.player2,
         match_type: data.matchType as 'singles' | 'doubles',
         score: scoreString,
-        location: data.location,
+        location: data.location || "", // Ensure location is never undefined
       });
       
       setOpen(false);
@@ -123,13 +124,13 @@ export function RecordMatchDialog() {
   }
 
   function handleSetScoreChange(idx: number, side: "p1" | "p2", val: string) {
-    setSetScores((prev) =>
-      prev.map((set, i) =>
-        i === idx
-          ? { ...set, [side]: val.replace(/[^0-9]/g, "").slice(0, 2) }
-          : set
-      )
-    );
+    const newSetScores = [...setScores];
+    // Create a new object for the modified set to ensure reactivity
+    newSetScores[idx] = { 
+      ...newSetScores[idx], 
+      [side]: val.replace(/[^0-9]/g, "").slice(0, 2) 
+    };
+    setSetScores(newSetScores);
   }
 
   // Find player objects from form values to get their names
@@ -168,15 +169,22 @@ export function RecordMatchDialog() {
         </DialogHeader>
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit((d) =>
+            onSubmit={form.handleSubmit((d) => {
+              const scoreString = setScores
+                .filter((s) => s.p1 !== "" && s.p2 !== "")
+                .map(({ p1, p2 }) => `${p1}-${p2}`)
+                .join(",");
+              
+              if (!scoreString) {
+                toast.error("Please enter the score for at least one set.");
+                return;
+              }
+              
               onSubmit({
                 ...d,
-                score: setScores
-                  .filter((s) => s.p1 !== "" && s.p2 !== "")
-                  .map((s) => `${s.p1}-${s.p2}`)
-                  .join(","),
-              })
-            )}
+                score: scoreString,
+              });
+            })}
             className="space-y-4"
           >
             <FormField
