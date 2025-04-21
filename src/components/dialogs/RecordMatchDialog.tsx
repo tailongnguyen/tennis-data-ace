@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -98,6 +97,14 @@ export function RecordMatchDialog() {
     }
 
     try {
+      console.log("Submitting match data:", {
+        player1_id: data.player1,
+        player2_id: data.player2,
+        match_type: data.matchType as 'singles' | 'doubles',
+        score: scoreString,
+        location: data.location,
+      });
+      
       await addMatch.mutateAsync({
         player1_id: data.player1,
         player2_id: data.player2,

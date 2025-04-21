@@ -52,6 +52,8 @@ export const useMatches = () => {
         match_date: new Date().toISOString(),
       };
 
+      console.log("Attempting to insert match data:", dataToInsert);
+
       const { data, error } = await supabase
         .from("matches")
         .insert(dataToInsert)
