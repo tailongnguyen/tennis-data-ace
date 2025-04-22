@@ -66,7 +66,7 @@ export function RecordMatchDialog() {
 
   // Represent each set as [p1, p2] score
   const [setScores, setSetScores] = useState<{ p1: string; p2: string }[]>(
-    Array(NUM_SETS).fill({ p1: "", p2: "" })
+    Array(NUM_SETS).fill(0).map(() => ({ p1: "", p2: "" }))
   );
 
   const form = useForm<MatchFormValues>({
@@ -156,7 +156,7 @@ export function RecordMatchDialog() {
       }}
     >
       <DialogTrigger asChild>
-        <Button>
+        <Button onClick={() => console.log("Dialog trigger clicked")}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Record Match
         </Button>
@@ -170,7 +170,9 @@ export function RecordMatchDialog() {
         </DialogHeader>
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit((d) => {
+            onSubmit={form.handleSubmit((data) => {
+              console.log("Form submitted with data:", data);
+              
               const scoreString = setScores
                 .filter((s) => s.p1 !== "" && s.p2 !== "")
                 .map(({ p1, p2 }) => `${p1}-${p2}`)
@@ -182,7 +184,7 @@ export function RecordMatchDialog() {
               }
               
               onSubmit({
-                ...d,
+                ...data,
                 score: scoreString,
               });
             })}
@@ -405,6 +407,7 @@ export function RecordMatchDialog() {
                 type="button"
                 variant="outline"
                 onClick={() => {
+                  console.log("Cancel button clicked");
                   setOpen(false);
                   resetSets();
                   form.reset();
@@ -412,7 +415,12 @@ export function RecordMatchDialog() {
               >
                 Cancel
               </Button>
-              <Button type="submit">Record Match</Button>
+              <Button 
+                type="submit"
+                onClick={() => console.log("Submit button clicked")}
+              >
+                Record Match
+              </Button>
             </div>
           </form>
         </Form>

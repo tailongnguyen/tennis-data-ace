@@ -61,24 +61,19 @@ export const useMatches = () => {
 
       console.log("Attempting to insert match data:", dataToInsert);
 
-      try {
-        const { data, error } = await supabase
-          .from("matches")
-          .insert(dataToInsert)
-          .select()
-          .single();
+      const { data, error } = await supabase
+        .from("matches")
+        .insert(dataToInsert)
+        .select()
+        .single();
 
-        if (error) {
-          console.error("Error adding match:", error);
-          throw error;
-        }
-
-        console.log("Match added successfully:", data);
-        return data;
-      } catch (error) {
-        console.error("Exception adding match:", error);
+      if (error) {
+        console.error("Error adding match:", error);
         throw error;
       }
+
+      console.log("Match added successfully:", data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matches"] });

@@ -1,4 +1,3 @@
-
 import { RecordMatchDialog } from "@/components/dialogs/RecordMatchDialog";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMatches } from "@/hooks/useMatches";
 import { format } from "date-fns";
 
@@ -14,6 +13,10 @@ const Matches = () => {
   const { matches, isLoading } = useMatches();
   const [filterType, setFilterType] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  
+  useEffect(() => {
+    console.log("Matches component rendered with matches:", matches);
+  }, [matches]);
 
   const filteredMatches = matches.filter(match => {
     // Filter by match type
