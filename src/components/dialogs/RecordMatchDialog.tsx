@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -85,8 +84,11 @@ export function RecordMatchDialog() {
     setSetScores(Array(NUM_SETS).fill(0).map(() => ({ p1: "", p2: "" })));
   }
 
-  async function onSubmit(data: MatchFormValues) {
+  // Separate function for handling form submission
+  function onSubmit(data: MatchFormValues) {
     try {
+      console.log("Form submitted with data:", data);
+      
       // Serialize sets to the familiar string format (e.g. 6-4,7-5,2-6)
       const scoreString = setScores
         .filter((s) => s.p1 !== "" && s.p2 !== "")
@@ -106,7 +108,7 @@ export function RecordMatchDialog() {
         location: data.location || "",
       });
       
-      // Directly call the mutateAsync method without awaiting to prevent any issues
+      // Call the mutation function with the prepared data
       addMatch.mutate({
         player1_id: data.player1,
         player2_id: data.player2,
@@ -117,7 +119,7 @@ export function RecordMatchDialog() {
       
       console.log("Match submission initiated");
       
-      // Close form and reset only after initiation
+      // Close form and reset
       setOpen(false);
       form.reset();
       resetSets();
@@ -173,24 +175,7 @@ export function RecordMatchDialog() {
         </DialogHeader>
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit((data) => {
-              console.log("Form submitted with data:", data);
-              
-              const scoreString = setScores
-                .filter((s) => s.p1 !== "" && s.p2 !== "")
-                .map(({ p1, p2 }) => `${p1}-${p2}`)
-                .join(",");
-              
-              if (!scoreString) {
-                toast.error("Please enter the score for at least one set.");
-                return;
-              }
-              
-              onSubmit({
-                ...data,
-                score: scoreString,
-              });
-            })}
+            onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-4"
           >
             <FormField
@@ -318,9 +303,7 @@ export function RecordMatchDialog() {
                               inputMode="numeric"
                               className={
                                 "w-12 text-center font-bold rounded border" +
-                                // Base: grey border, white bg
                                 " border-gray-300 bg-white " +
-                                // Highlight if this side won this set and set is not blank/tied
                                 (isWinner
                                   ? " bg-gray-200 border-gray-600 ring-2 ring-gray-500"
                                   : "")
@@ -418,9 +401,7 @@ export function RecordMatchDialog() {
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit"
-              >
+              <Button type="submit">
                 Record Match
               </Button>
             </div>

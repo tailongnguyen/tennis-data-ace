@@ -43,6 +43,8 @@ export const useMatches = () => {
 
   const addMatch = useMutation({
     mutationFn: async (matchData: CreateMatchData) => {
+      console.log("Starting match mutation with data:", matchData);
+      
       if (!user) {
         console.error("User not logged in");
         throw new Error("User must be logged in to add matches");
@@ -65,8 +67,7 @@ export const useMatches = () => {
       const result = await supabase
         .from("matches")
         .insert(dataToInsert)
-        .select()
-        .single();
+        .select();
 
       console.log("Supabase insert result:", result);
 
@@ -76,7 +77,7 @@ export const useMatches = () => {
       }
 
       console.log("Match added successfully:", result.data);
-      return result.data;
+      return result.data[0];
     },
     onSuccess: () => {
       console.log("Match added successfully - invalidating queries...");
