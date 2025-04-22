@@ -106,7 +106,8 @@ export function RecordMatchDialog() {
         location: data.location || "",
       });
       
-      await addMatch.mutateAsync({
+      // Directly call the mutateAsync method without awaiting to prevent any issues
+      addMatch.mutate({
         player1_id: data.player1,
         player2_id: data.player2,
         match_type: data.matchType as 'singles' | 'doubles',
@@ -114,7 +115,9 @@ export function RecordMatchDialog() {
         location: data.location || "",
       });
       
-      console.log("Match submitted successfully");
+      console.log("Match submission initiated");
+      
+      // Close form and reset only after initiation
       setOpen(false);
       form.reset();
       resetSets();
@@ -417,7 +420,6 @@ export function RecordMatchDialog() {
               </Button>
               <Button 
                 type="submit"
-                onClick={() => console.log("Submit button clicked")}
               >
                 Record Match
               </Button>
