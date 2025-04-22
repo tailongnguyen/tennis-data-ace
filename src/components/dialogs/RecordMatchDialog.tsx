@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -51,8 +52,6 @@ const NUM_SETS = 3;
 const matchSchema = z.object({
   player1: z.string().min(1, "Player 1 is required"),
   player2: z.string().min(1, "Player 2 is required"),
-  score: z.string().min(1, "Score is required"),
-  location: z.string().optional(),
   matchType: z.string().min(1, "Match type is required"),
 });
 
@@ -73,8 +72,6 @@ export function RecordMatchDialog() {
     defaultValues: {
       player1: "",
       player2: "",
-      score: "",
-      location: "",
       matchType: "singles",
     },
   });
@@ -84,49 +81,41 @@ export function RecordMatchDialog() {
     setSetScores(Array(NUM_SETS).fill(0).map(() => ({ p1: "", p2: "" })));
   }
 
-  // Separate function for handling form submission
-  function onSubmit(data: MatchFormValues) {
-    try {
-      console.log("Form submitted with data:", data);
-      
-      // Serialize sets to the familiar string format (e.g. 6-4,7-5,2-6)
-      const scoreString = setScores
-        .filter((s) => s.p1 !== "" && s.p2 !== "")
-        .map(({ p1, p2 }) => `${p1}-${p2}`)
-        .join(",");
+  function onSubmit(values: MatchFormValues) {
+    console.log("Form submitted with values:", values);
+    
+    // Serialize sets to the familiar string format (e.g. 6-4,7-5,2-6)
+    const scoreString = setScores
+      .filter((s) => s.p1 !== "" && s.p2 !== "")
+      .map(({ p1, p2 }) => `${p1}-${p2}`)
+      .join(",");
 
-      if (!scoreString) {
-        toast.error("Please enter the score for at least one set.");
-        return;
-      }
-
-      console.log("Submitting match with data:", {
-        player1_id: data.player1,
-        player2_id: data.player2,
-        match_type: data.matchType as 'singles' | 'doubles',
-        score: scoreString,
-        location: data.location || "",
-      });
-      
-      // Call the mutation function with the prepared data
-      addMatch.mutate({
-        player1_id: data.player1,
-        player2_id: data.player2,
-        match_type: data.matchType as 'singles' | 'doubles',
-        score: scoreString,
-        location: data.location || "",
-      });
-      
-      console.log("Match submission initiated");
-      
-      // Close form and reset
-      setOpen(false);
-      form.reset();
-      resetSets();
-    } catch (error) {
-      console.error("Error in onSubmit function:", error);
-      toast.error("Failed to record match. Please try again.");
+    if (!scoreString) {
+      toast.error("Please enter the score for at least one set.");
+      return;
     }
+
+    console.log("Submitting match with data:", {
+      player1_id: values.player1,
+      player2_id: values.player2,
+      match_type: values.matchType as 'singles' | 'doubles',
+      score: scoreString,
+    });
+    
+    // Call the mutation function with the prepared data
+    addMatch.mutate({
+      player1_id: values.player1,
+      player2_id: values.player2,
+      match_type: values.matchType as 'singles' | 'doubles',
+      score: scoreString,
+    });
+    
+    console.log("Match submission initiated");
+    
+    // Close form and reset
+    setOpen(false);
+    form.reset();
+    resetSets();
   }
 
   function handleSetScoreChange(idx: number, side: "p1" | "p2", val: string) {
@@ -367,27 +356,6 @@ export function RecordMatchDialog() {
                 Leave blank for sets that were not played.
               </p>
             </div>
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Location{" "}
-                    <span className="text-gray-400 text-xs">
-                      (optional)
-                    </span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter match location (optional)"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <div className="flex justify-end space-x-2">
               <Button
                 type="button"
@@ -401,7 +369,7 @@ export function RecordMatchDialog() {
               >
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button type="submit" onClick={() => console.log("Submit button clicked")}>
                 Record Match
               </Button>
             </div>

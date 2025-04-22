@@ -10,7 +10,6 @@ export interface CreateMatchData {
   player2_id: string;
   match_type: 'singles' | 'doubles';
   score: string;
-  location?: string;
 }
 
 export const useMatches = () => {
@@ -50,13 +49,13 @@ export const useMatches = () => {
         throw new Error("User must be logged in to add matches");
       }
 
-      // Ensure location is never undefined, use empty string instead
+      // Prepare data to insert
       const dataToInsert = {
         player1_id: matchData.player1_id,
         player2_id: matchData.player2_id,
         match_type: matchData.match_type,
         score: matchData.score,
-        location: matchData.location || "",
+        location: "", // Keep empty string for backward compatibility
         user_id: user.id,
         match_date: new Date().toISOString(),
       };

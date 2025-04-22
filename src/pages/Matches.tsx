@@ -1,3 +1,4 @@
+
 import { RecordMatchDialog } from "@/components/dialogs/RecordMatchDialog";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,9 +30,8 @@ const Matches = () => {
       const searchLower = searchTerm.toLowerCase();
       const hasPlayer = match.player1?.name?.toLowerCase().includes(searchLower) || 
                         match.player2?.name?.toLowerCase().includes(searchLower);
-      const hasLocation = match.location?.toLowerCase().includes(searchLower);
       
-      return hasPlayer || hasLocation;
+      return hasPlayer;
     }
     
     return true;
@@ -83,19 +83,18 @@ const Matches = () => {
                 <TableHead>Player(s)</TableHead>
                 <TableHead>Opponent(s)</TableHead>
                 <TableHead>Score</TableHead>
-                <TableHead>Location</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6">
+                  <TableCell colSpan={4} className="text-center py-6">
                     Loading matches...
                   </TableCell>
                 </TableRow>
               ) : filteredMatches.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
                     {matches.length === 0 
                       ? "No match records yet. Record your first match to see it here."
                       : "No matches found matching your filters."}
@@ -110,7 +109,6 @@ const Matches = () => {
                     <TableCell>{match.player1?.name || "Unknown"}</TableCell>
                     <TableCell>{match.player2?.name || "Unknown"}</TableCell>
                     <TableCell>{match.score}</TableCell>
-                    <TableCell>{match.location || "-"}</TableCell>
                   </TableRow>
                 ))
               )}

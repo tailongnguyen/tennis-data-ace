@@ -24,7 +24,6 @@ export interface Match {
   player2_id: string;
   match_type: 'singles' | 'doubles';
   score: string;
-  location: string;
   match_date: string;
   created_at: string;
   player1?: { id: string; name: string };
