@@ -20,12 +20,13 @@ export const useMatches = () => {
   const { data: matches = [], isLoading } = useQuery({
     queryKey: ["matches"],
     queryFn: async () => {
+      console.log("Fetching matches...");
       const { data, error } = await supabase
         .from("matches")
         .select(`
           *,
-          player1:players!matches_player1_id_fkey(name),
-          player2:players!matches_player2_id_fkey(name)
+          player1:players!matches_player1_id_fkey(id, name),
+          player2:players!matches_player2_id_fkey(id, name)
         `)
         .order("match_date", { ascending: false });
 
@@ -35,6 +36,7 @@ export const useMatches = () => {
         throw error;
       }
 
+      console.log("Matches fetched successfully:", data);
       return data as unknown as (Match & { player1: { name: string }, player2: { name: string } })[];
     },
   });

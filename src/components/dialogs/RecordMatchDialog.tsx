@@ -52,7 +52,6 @@ const NUM_SETS = 3;
 const matchSchema = z.object({
   player1: z.string().min(1, "Player 1 is required"),
   player2: z.string().min(1, "Player 2 is required"),
-  // 'score' will be populated via sets input, string sent to backend
   score: z.string().min(1, "Score is required"),
   location: z.string().optional(),
   matchType: z.string().min(1, "Match type is required"),
@@ -82,28 +81,29 @@ export function RecordMatchDialog() {
   });
 
   function resetSets() {
-    setSetScores(Array(NUM_SETS).fill({ p1: "", p2: "" }));
+    // Create a new array with new objects to ensure reactivity
+    setSetScores(Array(NUM_SETS).fill(0).map(() => ({ p1: "", p2: "" })));
   }
 
   async function onSubmit(data: MatchFormValues) {
-    // Serialize sets to the familiar string format (e.g. 6-4,7-5,2-6)
-    const scoreString = setScores
-      .filter((s) => s.p1 !== "" && s.p2 !== "")
-      .map(({ p1, p2 }) => `${p1}-${p2}`)
-      .join(",");
-
-    if (!scoreString) {
-      toast.error("Please enter the score for at least one set.");
-      return;
-    }
-
     try {
-      console.log("Submitting match data:", {
+      // Serialize sets to the familiar string format (e.g. 6-4,7-5,2-6)
+      const scoreString = setScores
+        .filter((s) => s.p1 !== "" && s.p2 !== "")
+        .map(({ p1, p2 }) => `${p1}-${p2}`)
+        .join(",");
+
+      if (!scoreString) {
+        toast.error("Please enter the score for at least one set.");
+        return;
+      }
+
+      console.log("Submitting match with data:", {
         player1_id: data.player1,
         player2_id: data.player2,
         match_type: data.matchType as 'singles' | 'doubles',
         score: scoreString,
-        location: data.location,
+        location: data.location || "",
       });
       
       await addMatch.mutateAsync({
@@ -111,15 +111,16 @@ export function RecordMatchDialog() {
         player2_id: data.player2,
         match_type: data.matchType as 'singles' | 'doubles',
         score: scoreString,
-        location: data.location || "", // Ensure location is never undefined
+        location: data.location || "",
       });
       
+      console.log("Match submitted successfully");
       setOpen(false);
       form.reset();
       resetSets();
     } catch (error) {
-      console.error("Error submitting match:", error);
-      toast.error("Failed to record match");
+      console.error("Error in onSubmit function:", error);
+      toast.error("Failed to record match. Please try again.");
     }
   }
 
