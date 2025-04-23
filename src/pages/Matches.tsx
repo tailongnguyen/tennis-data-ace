@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMatches } from "@/hooks/useMatches";
 import { format } from "date-fns";
 
@@ -15,27 +15,37 @@ const Matches = () => {
   const [filterType, setFilterType] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   
-  useEffect(() => {
-    console.log("Matches component rendered with matches:", matches);
-  }, [matches]);
-
   const filteredMatches = matches.filter(match => {
-    // Filter by match type
     if (filterType !== "all" && match.match_type !== filterType) {
       return false;
     }
     
-    // Filter by search term
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
-      const hasPlayer = match.player1?.name?.toLowerCase().includes(searchLower) || 
-                        match.player2?.name?.toLowerCase().includes(searchLower);
-      
-      return hasPlayer;
+      return [
+        match.winner1?.name,
+        match.winner2?.name,
+        match.loser1?.name,
+        match.loser2?.name
+      ].some(name => name?.toLowerCase().includes(searchLower));
     }
     
     return true;
   });
+
+  const formatPlayers = (match: Match) => {
+    if (match.match_type === 'singles') {
+      return {
+        winners: match.winner1?.name || 'Unknown',
+        losers: match.loser1?.name || 'Unknown'
+      };
+    }
+    
+    return {
+      winners: `${match.winner1?.name || 'Unknown'} / ${match.winner2?.name || 'Unknown'}`,
+      losers: `${match.loser1?.name || 'Unknown'} / ${match.loser2?.name || 'Unknown'}`
+    };
+  };
 
   return (
     <div className="space-y-4">
@@ -80,8 +90,8 @@ const Matches = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
-                <TableHead>Player(s)</TableHead>
-                <TableHead>Opponent(s)</TableHead>
+                <TableHead>Winner(s)</TableHead>
+                <TableHead>Loser(s)</TableHead>
                 <TableHead>Score</TableHead>
               </TableRow>
             </TableHeader>
@@ -101,16 +111,19 @@ const Matches = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredMatches.map((match) => (
-                  <TableRow key={match.id}>
-                    <TableCell>
-                      {format(new Date(match.match_date), 'MMM d, yyyy')}
-                    </TableCell>
-                    <TableCell>{match.player1?.name || "Unknown"}</TableCell>
-                    <TableCell>{match.player2?.name || "Unknown"}</TableCell>
-                    <TableCell>{match.score}</TableCell>
-                  </TableRow>
-                ))
+                filteredMatches.map((match) => {
+                  const { winners, losers } = formatPlayers(match);
+                  return (
+                    <TableRow key={match.id}>
+                      <TableCell>
+                        {format(new Date(match.match_date), 'MMM d, yyyy')}
+                      </TableCell>
+                      <TableCell>{winners}</TableCell>
+                      <TableCell>{losers}</TableCell>
+                      <TableCell>{match.score}</TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

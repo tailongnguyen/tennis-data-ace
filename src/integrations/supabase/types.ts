@@ -13,47 +13,64 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          location: string
+          loser1_id: string
+          loser2_id: string | null
           match_date: string
           match_type: string
-          player1_id: string
-          player2_id: string
           score: string
           user_id: string
+          winner1_id: string
+          winner2_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          location: string
+          loser1_id: string
+          loser2_id?: string | null
           match_date?: string
           match_type: string
-          player1_id: string
-          player2_id: string
           score: string
           user_id: string
+          winner1_id: string
+          winner2_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          location?: string
+          loser1_id?: string
+          loser2_id?: string | null
           match_date?: string
           match_type?: string
-          player1_id?: string
-          player2_id?: string
           score?: string
           user_id?: string
+          winner1_id?: string
+          winner2_id?: string
         }
         Relationships: [
           {
+            foreignKeyName: "matches_loser1_id_fkey"
+            columns: ["loser1_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_loser2_id_fkey"
+            columns: ["loser2_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "matches_player1_id_fkey"
-            columns: ["player1_id"]
+            columns: ["winner1_id"]
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "matches_player2_id_fkey"
-            columns: ["player2_id"]
+            columns: ["winner2_id"]
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]

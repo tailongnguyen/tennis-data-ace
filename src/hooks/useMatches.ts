@@ -6,8 +6,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Match } from "@/types/player";
 
 export interface CreateMatchData {
-  player1_id: string;
-  player2_id: string;
+  winner1_id: string;
+  winner2_id: string | null;
+  loser1_id: string;
+  loser2_id: string | null;
   match_type: 'singles' | 'doubles';
   score: string;
 }
@@ -24,8 +26,10 @@ export const useMatches = () => {
         .from("matches")
         .select(`
           *,
-          player1:players!matches_player1_id_fkey(id, name),
-          player2:players!matches_player2_id_fkey(id, name)
+          winner1:players!matches_winner1_id_fkey(id, name),
+          winner2:players!matches_winner2_id_fkey(id, name),
+          loser1:players!matches_loser1_id_fkey(id, name),
+          loser2:players!matches_loser2_id_fkey(id, name)
         `)
         .order("match_date", { ascending: false });
 
@@ -36,7 +40,7 @@ export const useMatches = () => {
       }
 
       console.log("Matches fetched successfully:", data);
-      return data as unknown as (Match & { player1: { name: string }, player2: { name: string } })[];
+      return data as Match[];
     },
   });
 
@@ -49,20 +53,14 @@ export const useMatches = () => {
         throw new Error("User must be logged in to add matches");
       }
 
-      // Prepare data to insert
       const dataToInsert = {
-        player1_id: matchData.player1_id,
-        player2_id: matchData.player2_id,
-        match_type: matchData.match_type,
-        score: matchData.score,
-        location: "", // Keep empty string for backward compatibility
+        ...matchData,
         user_id: user.id,
         match_date: new Date().toISOString(),
       };
 
       console.log("Attempting to insert match data:", dataToInsert);
 
-      // First attempt to insert the data
       const result = await supabase
         .from("matches")
         .insert(dataToInsert)

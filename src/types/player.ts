@@ -20,12 +20,16 @@ export interface Player {
 
 export interface Match {
   id: string;
-  player1_id: string;
-  player2_id: string;
+  winner1_id: string;
+  winner2_id: string | null;
+  loser1_id: string;
+  loser2_id: string | null;
   match_type: 'singles' | 'doubles';
   score: string;
   match_date: string;
   created_at: string;
-  player1?: { id: string; name: string };
-  player2?: { id: string; name: string };
+  winner1?: { id: string; name: string };
+  winner2?: { id: string; name: string };
+  loser1?: { id: string; name: string };
+  loser2?: { id: string; name: string };
 }
