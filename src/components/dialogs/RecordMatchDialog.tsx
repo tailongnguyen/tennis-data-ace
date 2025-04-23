@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -46,14 +47,26 @@ function getSetWinner(p1Score: string, p2Score: string): "p1" | "p2" | null {
   return null;
 }
 
-const NUM_SETS = 3;
+// Helper to determine match winners based on sets
+function determineMatchWinners(setScores: { p1: string; p2: string }[]): "p1" | "p2" {
+  let p1Sets = 0;
+  let p2Sets = 0;
+  
+  setScores.forEach(set => {
+    const winner = getSetWinner(set.p1, set.p2);
+    if (winner === "p1") p1Sets++;
+    if (winner === "p2") p2Sets++;
+  });
+  
+  return p1Sets > p2Sets ? "p1" : "p2";
+}
 
 const matchSchema = z.object({
   matchType: z.enum(['singles', 'doubles']),
-  winner1: z.string().min(1, "First winner is required"),
-  winner2: z.string().optional(),
-  loser1: z.string().min(1, "First loser is required"),
-  loser2: z.string().optional(),
+  player1: z.string().min(1, "Player 1 is required"),
+  player2: z.string().min(1, "Player 2 is required"),
+  player3: z.string().min(1, "Player 3 is required"),
+  player4: z.string().optional(),
 });
 
 type MatchFormValues = z.infer<typeof matchSchema>;
@@ -70,8 +83,9 @@ export function RecordMatchDialog() {
     resolver: zodResolver(matchSchema),
     defaultValues: {
       matchType: 'singles',
-      winner1: "",
-      loser1: "",
+      player1: "",
+      player2: "",
+      player3: "",
     },
   });
 
@@ -84,16 +98,22 @@ export function RecordMatchDialog() {
       .join(",");
 
     if (!scoreString) {
+      toast.error("Please enter at least one set score");
       return;
     }
 
+    const matchWinner = determineMatchWinners(setScores);
+    
+    // Create match data based on who won
     const matchData: CreateMatchData = {
       match_type: values.matchType,
-      winner1_id: values.winner1,
-      winner2_id: values.matchType === 'doubles' ? values.winner2 || null : null,
-      loser1_id: values.loser1,
-      loser2_id: values.matchType === 'doubles' ? values.loser2 || null : null,
       score: scoreString,
+      winner1_id: matchWinner === "p1" ? values.player1 : values.player3,
+      winner2_id: values.matchType === 'doubles' ? 
+        (matchWinner === "p1" ? values.player2 : values.player4) || null : null,
+      loser1_id: matchWinner === "p1" ? values.player3 : values.player1,
+      loser2_id: values.matchType === 'doubles' ? 
+        (matchWinner === "p1" ? values.player4 : values.player2) || null : null,
     };
 
     addMatch.mutate(matchData);
@@ -104,7 +124,6 @@ export function RecordMatchDialog() {
 
   function handleSetScoreChange(idx: number, side: "p1" | "p2", val: string) {
     const newSetScores = [...setScores];
-    // Create a new object for the modified set to ensure reactivity
     newSetScores[idx] = { 
       ...newSetScores[idx], 
       [side]: val.replace(/[^0-9]/g, "").slice(0, 2) 
@@ -112,15 +131,20 @@ export function RecordMatchDialog() {
     setSetScores(newSetScores);
   }
 
-  // Find player objects from form values to get their names
-  const player1Obj = players.find(
-    (p) => p.id === form.watch("winner1")
-  );
-  const player2Obj = players.find(
-    (p) => p.id === form.watch("winner2")
-  );
-  const player1Name = player1Obj ? player1Obj.name : "Player 1";
-  const player2Name = player2Obj ? player2Obj.name : "Player 2";
+  // Get player names for display
+  const player1Name = players.find(p => p.id === form.watch("player1"))?.name || "Player 1";
+  const player2Name = players.find(p => p.id === form.watch("player2"))?.name || "Player 2";
+  const player3Name = players.find(p => p.id === form.watch("player3"))?.name || "Player 3";
+  const player4Name = players.find(p => p.id === form.watch("player4"))?.name || "Player 4";
+
+  // Get team names based on match type
+  const team1Name = watchMatchType === 'singles' ? 
+    player1Name : 
+    `${player1Name} / ${player2Name}`;
+  
+  const team2Name = watchMatchType === 'singles' ? 
+    player3Name : 
+    `${player3Name} / ${player4Name}`;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -162,14 +186,14 @@ export function RecordMatchDialog() {
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="winner1"
+                name="player1"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Winner 1</FormLabel>
+                    <FormLabel>Team 1 - Player 1</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select winner 1" />
+                          <SelectValue placeholder="Select player" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -188,14 +212,14 @@ export function RecordMatchDialog() {
               {watchMatchType === 'doubles' && (
                 <FormField
                   control={form.control}
-                  name="winner2"
+                  name="player2"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Winner 2</FormLabel>
+                      <FormLabel>Team 1 - Player 2</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select winner 2" />
+                            <SelectValue placeholder="Select player" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -214,14 +238,14 @@ export function RecordMatchDialog() {
 
               <FormField
                 control={form.control}
-                name="loser1"
+                name="player3"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Loser 1</FormLabel>
+                    <FormLabel>Team 2 - Player 1</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select loser 1" />
+                          <SelectValue placeholder="Select player" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -240,14 +264,14 @@ export function RecordMatchDialog() {
               {watchMatchType === 'doubles' && (
                 <FormField
                   control={form.control}
-                  name="loser2"
+                  name="player4"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Loser 2</FormLabel>
+                      <FormLabel>Team 2 - Player 2</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select loser 2" />
+                            <SelectValue placeholder="Select player" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -278,7 +302,7 @@ export function RecordMatchDialog() {
                   <thead>
                     <tr>
                       <th className="px-2 text-center text-xs text-gray-500 font-semibold uppercase">
-                        PLAYERS
+                        TEAMS
                       </th>
                       {setScores.map((_, i) => (
                         <th
@@ -296,7 +320,7 @@ export function RecordMatchDialog() {
                         className="pr-2 text-xs font-medium text-gray-700"
                         style={{ width: "90px" }}
                       >
-                        {player1Name}
+                        {team1Name}
                       </td>
                       {setScores.map((set, idx) => {
                         const winner = getSetWinner(set.p1, set.p2);
@@ -334,7 +358,7 @@ export function RecordMatchDialog() {
                         className="pr-2 text-xs font-medium text-gray-700"
                         style={{ width: "90px" }}
                       >
-                        {player2Name}
+                        {team2Name}
                       </td>
                       {setScores.map((set, idx) => {
                         const winner = getSetWinner(set.p1, set.p2);
