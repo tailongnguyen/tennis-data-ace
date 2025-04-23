@@ -28,8 +28,8 @@ export interface Match {
   score: string;
   match_date: string;
   created_at: string;
-  winner1?: { id: string; name: string };
-  winner2?: { id: string; name: string };
-  loser1?: { id: string; name: string };
-  loser2?: { id: string; name: string };
+  winner1?: Player;
+  winner2?: Player | null;
+  loser1?: Player;
+  loser2?: Player | null;
 }

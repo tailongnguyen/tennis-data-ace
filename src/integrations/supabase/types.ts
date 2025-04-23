@@ -20,7 +20,7 @@ export type Database = {
           score: string
           user_id: string
           winner1_id: string
-          winner2_id: string
+          winner2_id: string | null
         }
         Insert: {
           created_at?: string
@@ -32,7 +32,7 @@ export type Database = {
           score: string
           user_id: string
           winner1_id: string
-          winner2_id: string
+          winner2_id?: string | null
         }
         Update: {
           created_at?: string
@@ -44,7 +44,7 @@ export type Database = {
           score?: string
           user_id?: string
           winner1_id?: string
-          winner2_id?: string
+          winner2_id?: string | null
         }
         Relationships: [
           {
