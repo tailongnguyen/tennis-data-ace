@@ -26,10 +26,10 @@ export const useMatches = () => {
         .from("matches")
         .select(`
           *,
-          winner1:players(id, name, age, playing_style, ranking_points),
-          winner2:players(id, name, age, playing_style, ranking_points),
-          loser1:players(id, name, age, playing_style, ranking_points),
-          loser2:players(id, name, age, playing_style, ranking_points)
+          winner1:players!matches_player1_id_fkey(id, name, age, playing_style, ranking_points),
+          winner2:players!matches_player2_id_fkey(id, name, age, playing_style, ranking_points),
+          loser1:players!matches_loser1_id_fkey(id, name, age, playing_style, ranking_points),
+          loser2:players!matches_loser2_id_fkey(id, name, age, playing_style, ranking_points)
         `)
         .order("match_date", { ascending: false });
 
