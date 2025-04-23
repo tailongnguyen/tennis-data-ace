@@ -15,7 +15,7 @@ export interface Player {
   age: number;
   playing_style: PlayingStyle;
   ranking_points: number;
-  created_at: string;
+  created_at?: string; // Make created_at optional
 }
 
 export interface Match {

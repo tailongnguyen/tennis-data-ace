@@ -40,7 +40,7 @@ export const useMatches = () => {
       }
 
       console.log("Matches fetched successfully:", data);
-      return data as Match[];
+      return data as unknown as Match[]; // Use type assertion to match our interface
     },
   });
 
