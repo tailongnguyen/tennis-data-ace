@@ -115,8 +115,8 @@ const Index = () => {
                     <TableRow>
                       <TableHead>Date</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Winners</TableHead>
-                      <TableHead>Losers</TableHead>
+                      <TableHead>Team 1</TableHead>
+                      <TableHead>Team 2</TableHead>
                       <TableHead>Score</TableHead>
                     </TableRow>
                   </TableHeader>

@@ -1,4 +1,3 @@
-
 import { RecordMatchDialog } from "@/components/dialogs/RecordMatchDialog";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -90,8 +89,8 @@ const Matches = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
-                <TableHead>Winner(s)</TableHead>
-                <TableHead>Loser(s)</TableHead>
+                <TableHead>Team 1</TableHead>
+                <TableHead>Team 2</TableHead>
                 <TableHead>Score</TableHead>
               </TableRow>
             </TableHeader>
