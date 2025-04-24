@@ -92,12 +92,13 @@ export function RecordMatchDialog() {
   const watchMatchType = form.watch("matchType");
 
   function onSubmit(values: MatchFormValues) {
-    const scoreString = setScores
-      .filter((s) => s.p1 !== "" && s.p2 !== "")
+    // Check if scores are entered
+    const validSets = setScores.filter((s) => s.p1 !== "" && s.p2 !== "");
+    const scoreString = validSets
       .map(({ p1, p2 }) => `${p1}-${p2}`)
       .join(",");
 
-    if (!scoreString) {
+    if (validSets.length === 0) {
       toast.error("Please enter at least one set score");
       return;
     }
@@ -116,14 +117,24 @@ export function RecordMatchDialog() {
         (matchWinner === "p1" ? values.player4 : values.player2) || null : null,
     };
 
-    addMatch.mutate(matchData);
-    setOpen(false);
-    form.reset();
-    setSetScores(Array(3).fill({ p1: "", p2: "" }));
+    console.log("Submitting match data:", matchData);
+
+    addMatch.mutate(matchData, {
+      onSuccess: () => {
+        setOpen(false);
+        form.reset();
+        setSetScores(Array(3).fill({ p1: "", p2: "" }));
+      },
+      onError: (error) => {
+        console.error("Error submitting match:", error);
+        toast.error("Failed to record match");
+      }
+    });
   }
 
   function handleSetScoreChange(idx: number, side: "p1" | "p2", val: string) {
     const newSetScores = [...setScores];
+    // Create a new object reference to ensure state updates properly
     newSetScores[idx] = { 
       ...newSetScores[idx], 
       [side]: val.replace(/[^0-9]/g, "").slice(0, 2) 
