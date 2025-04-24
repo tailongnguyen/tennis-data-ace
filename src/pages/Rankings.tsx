@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { usePlayers } from "@/hooks/usePlayers";
 import { useMatches } from "@/hooks/useMatches";
-import { addDays, differenceInDays, format, isWithinInterval, parseISO, subDays } from "date-fns";
+import { addDays, format, isWithinInterval, parseISO, subDays } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -56,18 +56,29 @@ const Rankings = () => {
     });
   };
 
-  // Calculate win rate for each player
-  const calculateWinRate = (playerId) => {
-    const playerMatches = getFilteredMatches().filter(match => 
+  // Check if a match is a draw
+  const isDrawMatch = (match) => {
+    // In tennis, we consider a match a draw if the score is tied
+    return match.score === '5-5' || match.score === '6-6';
+  };
+
+  // Get all matches for a player
+  const getPlayerMatches = (playerId) => {
+    return getFilteredMatches().filter(match => 
       match.winner1_id === playerId || 
       match.winner2_id === playerId || 
       match.loser1_id === playerId || 
       match.loser2_id === playerId
     );
+  };
+
+  // Calculate win rate for each player
+  const calculateWinRate = (playerId) => {
+    const playerMatches = getPlayerMatches(playerId);
     
     if (playerMatches.length === 0) return 0;
     
-    const wins = getFilteredMatches().filter(match => 
+    const wins = playerMatches.filter(match => 
       match.winner1_id === playerId || match.winner2_id === playerId
     ).length;
     
@@ -76,25 +87,17 @@ const Rankings = () => {
 
   // Calculate not lose percentage (wins + draws) / total matches
   const calculateNotLoseRate = (playerId) => {
-    const playerMatches = getFilteredMatches().filter(match => 
-      match.winner1_id === playerId || 
-      match.winner2_id === playerId || 
-      match.loser1_id === playerId || 
-      match.loser2_id === playerId
-    );
+    const playerMatches = getPlayerMatches(playerId);
     
     if (playerMatches.length === 0) return 0;
     
-    const drawnMatches = getFilteredMatches().filter(match => 
-      (match.score === '5-5' || match.score === '6-6') && 
-      (match.winner1_id === playerId || match.winner2_id === playerId)
-    ).length;
-
-    const wins = getFilteredMatches().filter(match => 
+    const draws = playerMatches.filter(match => isDrawMatch(match)).length;
+    
+    const wins = playerMatches.filter(match => 
       match.winner1_id === playerId || match.winner2_id === playerId
     ).length;
 
-    return ((wins + drawnMatches) / playerMatches.length) * 100;
+    return ((wins + draws) / playerMatches.length) * 100;
   };
 
   // Filter players based on search query and match type
@@ -212,12 +215,7 @@ const Rankings = () => {
                 filteredPlayers.map((player, index) => {
                   const winRate = calculateWinRate(player.id);
                   const notLoseRate = calculateNotLoseRate(player.id);
-                  const totalMatches = getFilteredMatches().filter(match => 
-                    match.winner1_id === player.id || 
-                    match.winner2_id === player.id || 
-                    match.loser1_id === player.id || 
-                    match.loser2_id === player.id
-                  ).length;
+                  const totalMatches = getPlayerMatches(player.id).length;
                   
                   return (
                     <TableRow key={player.id}>
