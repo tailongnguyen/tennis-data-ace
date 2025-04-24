@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,7 +28,7 @@ import { cn } from "@/lib/utils";
 const COLORS = ['#8B5CF6', '#D946EF', '#F97316', '#0EA5E9', '#10B981', '#EAB308'];
 
 const Analytics = () => {
-  const { matches, isLoading: matchesLoading } = useMatches();
+  const { matches, isLoading: matchesLoading, isDrawMatch, getPlayerMatches, getPlayerWins, getPlayerDraws, getPlayerLosses, calculateWinRate, calculateNotLoseRate } = useMatches();
   const { players, isLoading: playersLoading } = usePlayers();
   const [selectedPlayer, setSelectedPlayer] = useState<string>("all");
   const [timePeriod, setTimePeriod] = useState<string>("year");
@@ -70,72 +71,65 @@ const Analytics = () => {
   const winLossData = useMemo(() => {
     if (selectedPlayer === "all") {
       const playerStats = players.map(player => {
-        const wins = filteredMatches.filter(match => 
-          match.winner1_id === player.id || match.winner2_id === player.id
-        ).length;
-        
-        const losses = filteredMatches.filter(match => 
-          match.loser1_id === player.id || match.loser2_id === player.id
-        ).length;
+        const wins = getPlayerWins(player.id, filteredMatches);
+        const losses = getPlayerLosses(player.id, filteredMatches);
+        const draws = getPlayerDraws(player.id, filteredMatches);
         
         return {
           name: player.name,
           wins,
           losses,
-          total: wins + losses,
-          winRate: wins === 0 ? 0 : Math.round((wins / (wins + losses)) * 100)
+          draws,
+          total: wins + losses + draws,
+          winRate: calculateWinRate(player.id, filteredMatches),
+          notLoseRate: calculateNotLoseRate(player.id, filteredMatches)
         };
       }).filter(player => player.total > 0);
 
       return playerStats;
     } else {
-      const wins = filteredMatches.filter(match => 
-        match.winner1_id === selectedPlayer || match.winner2_id === selectedPlayer
-      ).length;
-      
-      const losses = filteredMatches.filter(match => 
-        match.loser1_id === selectedPlayer || match.loser2_id === selectedPlayer
-      ).length;
+      const wins = getPlayerWins(selectedPlayer, filteredMatches);
+      const losses = getPlayerLosses(selectedPlayer, filteredMatches);
       
       return [{ name: "Wins", value: wins }, { name: "Losses", value: losses }];
     }
-  }, [filteredMatches, selectedPlayer, players]);
+  }, [filteredMatches, selectedPlayer, players, getPlayerWins, getPlayerLosses, getPlayerDraws, calculateWinRate, calculateNotLoseRate]);
 
   const aggregatedMetrics = useMemo(() => {
     const totalMatches = filteredMatches.length;
-    let wins = 0;
-    let losses = 0;
+    let totalWins = 0;
+    let totalDraws = 0;
+    let totalLosses = 0;
+    let totalGames = 0;
 
     if (selectedPlayer === "all") {
       players.forEach(player => {
-        wins += filteredMatches.filter(match => 
-          match.winner1_id === player.id || match.winner2_id === player.id
-        ).length;
+        const playerMatches = getPlayerMatches(player.id, filteredMatches);
+        const wins = getPlayerWins(player.id, filteredMatches);
+        const draws = getPlayerDraws(player.id, filteredMatches);
+        const losses = getPlayerLosses(player.id, filteredMatches);
         
-        losses += filteredMatches.filter(match => 
-          match.loser1_id === player.id || match.loser2_id === player.id
-        ).length;
+        totalWins += wins;
+        totalDraws += draws;
+        totalLosses += losses;
+        totalGames += playerMatches.length;
       });
     } else {
-      wins = filteredMatches.filter(match => 
-        match.winner1_id === selectedPlayer || match.winner2_id === selectedPlayer
-      ).length;
-      
-      losses = filteredMatches.filter(match => 
-        match.loser1_id === selectedPlayer || match.loser2_id === selectedPlayer
-      ).length;
+      totalWins = getPlayerWins(selectedPlayer, filteredMatches);
+      totalDraws = getPlayerDraws(selectedPlayer, filteredMatches);
+      totalLosses = getPlayerLosses(selectedPlayer, filteredMatches);
+      totalGames = getPlayerMatches(selectedPlayer, filteredMatches).length;
     }
 
-    const total = wins + losses;
-    const winRate = total === 0 ? 0 : Math.round((wins / total) * 100);
-    const notLoseRate = total === 0 ? 0 : Math.round((wins / total) * 100);
+    const winRate = totalGames === 0 ? 0 : Math.round((totalWins / totalGames) * 100);
+    const notLoseRate = totalGames === 0 ? 0 : Math.round(((totalWins + totalDraws) / totalGames) * 100);
 
     return {
-      totalMatches: total,
+      totalMatches: totalGames,
       winRate,
       notLoseRate
     };
-  }, [filteredMatches, selectedPlayer, players]);
+  }, [filteredMatches, selectedPlayer, players, getPlayerMatches, getPlayerWins, getPlayerDraws, getPlayerLosses]);
 
   const monthlyPerformanceData = useMemo(() => {
     const last6Months = Array.from({ length: 6 }, (_, i) => {
@@ -146,7 +140,11 @@ const Analytics = () => {
         year: date.getFullYear(),
         matches: 0,
         wins: 0,
-        total: 0
+        draws: 0,
+        losses: 0,
+        total: 0,
+        winRate: 0,
+        notLoseRate: 0
       };
     }).reverse();
 
@@ -159,21 +157,37 @@ const Analytics = () => {
       if (monthIndex >= 0) {
         last6Months[monthIndex].matches += 1;
         
-        if (selectedPlayer === "all" || 
-            match.winner1_id === selectedPlayer || 
-            match.winner2_id === selectedPlayer) {
-          last6Months[monthIndex].wins += 1;
+        if (selectedPlayer === "all") {
+          // Just count total matches for all players
+          last6Months[monthIndex].total += 1;
+        } else {
+          // For a specific player, track their performance
+          const isWinner = match.winner1_id === selectedPlayer || match.winner2_id === selectedPlayer;
+          const isLoser = match.loser1_id === selectedPlayer || match.loser2_id === selectedPlayer;
+          const isDraw = isDrawMatch(match.score);
+          
+          if (isWinner || isLoser) {
+            last6Months[monthIndex].total += 1;
+            
+            if (isDraw) {
+              last6Months[monthIndex].draws += 1;
+            } else if (isWinner) {
+              last6Months[monthIndex].wins += 1;
+            } else if (isLoser) {
+              last6Months[monthIndex].losses += 1;
+            }
+          }
         }
-        last6Months[monthIndex].total += 1;
       }
     });
 
+    // Calculate win rates and not lose rates for each month
     return last6Months.map(month => ({
       ...month,
       winRate: month.total === 0 ? 0 : Math.round((month.wins / month.total) * 100),
-      notLoseRate: month.total === 0 ? 0 : Math.round((month.wins / month.total) * 100)
+      notLoseRate: month.total === 0 ? 0 : Math.round(((month.wins + month.draws) / month.total) * 100)
     }));
-  }, [filteredMatches, selectedPlayer]);
+  }, [filteredMatches, selectedPlayer, isDrawMatch]);
 
   const matchTypeData = useMemo(() => {
     const singles = filteredMatches.filter(match => match.match_type === 'singles').length;

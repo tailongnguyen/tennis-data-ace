@@ -44,6 +44,57 @@ export const useMatches = () => {
     },
   });
 
+  const isDrawMatch = (score: string) => {
+    return score === '5-5' || score === '6-6';
+  };
+
+  const getPlayerMatches = (playerId: string, filteredMatches: Match[] = matches) => {
+    return filteredMatches.filter(match => 
+      match.winner1_id === playerId || 
+      match.winner2_id === playerId || 
+      match.loser1_id === playerId || 
+      match.loser2_id === playerId
+    );
+  };
+
+  const getPlayerWins = (playerId: string, filteredMatches: Match[] = matches) => {
+    return filteredMatches.filter(match => 
+      !isDrawMatch(match.score) && (match.winner1_id === playerId || match.winner2_id === playerId)
+    ).length;
+  };
+
+  const getPlayerDraws = (playerId: string, filteredMatches: Match[] = matches) => {
+    return filteredMatches.filter(match => 
+      isDrawMatch(match.score) && 
+      (match.winner1_id === playerId || match.winner2_id === playerId || 
+       match.loser1_id === playerId || match.loser2_id === playerId)
+    ).length;
+  };
+
+  const getPlayerLosses = (playerId: string, filteredMatches: Match[] = matches) => {
+    return filteredMatches.filter(match => 
+      !isDrawMatch(match.score) && (match.loser1_id === playerId || match.loser2_id === playerId)
+    ).length;
+  };
+
+  const calculateWinRate = (playerId: string, filteredMatches: Match[] = matches) => {
+    const totalMatches = getPlayerMatches(playerId, filteredMatches).length;
+    if (totalMatches === 0) return 0;
+    
+    const wins = getPlayerWins(playerId, filteredMatches);
+    return (wins / totalMatches) * 100;
+  };
+
+  const calculateNotLoseRate = (playerId: string, filteredMatches: Match[] = matches) => {
+    const totalMatches = getPlayerMatches(playerId, filteredMatches).length;
+    if (totalMatches === 0) return 0;
+    
+    const wins = getPlayerWins(playerId, filteredMatches);
+    const draws = getPlayerDraws(playerId, filteredMatches);
+    
+    return ((wins + draws) / totalMatches) * 100;
+  };
+
   const addMatch = useMutation({
     mutationFn: async (matchData: CreateMatchData) => {
       console.log("Starting match mutation with data:", matchData);
@@ -91,5 +142,12 @@ export const useMatches = () => {
     matches,
     isLoading,
     addMatch,
+    isDrawMatch,
+    getPlayerMatches,
+    getPlayerWins,
+    getPlayerDraws,
+    getPlayerLosses,
+    calculateWinRate,
+    calculateNotLoseRate
   };
 };
