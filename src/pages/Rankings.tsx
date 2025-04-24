@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Calendar } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { usePlayers } from "@/hooks/usePlayers";
@@ -25,6 +25,7 @@ const Rankings = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [matchType, setMatchType] = useState("all");
   const [dateRange, setDateRange] = useState('30d');
+  const [showFilters, setShowFilters] = useState(false);
   const [customDateRange, setCustomDateRange] = useState<DateRange>({
     from: undefined,
     to: undefined
@@ -120,7 +121,18 @@ const Rankings = () => {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-3xl font-bold">Rankings</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Rankings</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <Filter className="h-4 w-4" />
+          {showFilters ? 'Hide Filters' : 'Show Filters'}
+        </Button>
+      </div>
       
       <Card>
         <CardHeader>
@@ -128,7 +140,7 @@ const Rankings = () => {
           <CardDescription>Current rankings based on match performance (Win: +3 points, Loss: -1 point)</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className={cn("flex flex-wrap gap-2 mb-4", !showFilters && "hidden")}>
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
