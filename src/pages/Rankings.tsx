@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,7 +51,12 @@ const Rankings = () => {
 
     return matches.filter(match => {
       const matchDate = parseISO(match.match_date);
-      return isWithinInterval(matchDate, { start: startDate, end: endDate });
+      const dateInRange = isWithinInterval(matchDate, { start: startDate, end: endDate });
+      
+      // Apply match type filter
+      const matchTypeFilter = matchType === 'all' || match.match_type === matchType;
+      
+      return dateInRange && matchTypeFilter;
     });
   };
 
