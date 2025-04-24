@@ -209,6 +209,15 @@ const Analytics = () => {
 
   const hasData = filteredMatches.length > 0;
   
+  // Determine which players to show in the head-to-head table
+  const headToHeadRowPlayers = selectedPlayer === "all" 
+    ? players 
+    : players.filter(player => player.id === selectedPlayer);
+
+  const headToHeadColumnPlayers = players.filter(player => 
+    selectedPlayer === "all" || player.id !== selectedPlayer
+  );
+  
   return (
     <div className="space-y-4">
       <h1 className="text-3xl font-bold">Performance Analytics</h1>
@@ -412,7 +421,7 @@ const Analytics = () => {
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Player
                         </th>
-                        {players.map(player => (
+                        {headToHeadColumnPlayers.map(player => (
                           <th key={player.id} scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {player.name}
                           </th>
@@ -420,12 +429,12 @@ const Analytics = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {players.map(player1 => (
+                      {headToHeadRowPlayers.map(player1 => (
                         <tr key={player1.id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {player1.name}
                           </td>
-                          {players.map(player2 => {
+                          {headToHeadColumnPlayers.map(player2 => {
                             if (player1.id === player2.id) {
                               return (
                                 <td key={player2.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -434,19 +443,42 @@ const Analytics = () => {
                               );
                             }
                             
-                            const relevantMatches = filteredMatches.filter(match => 
-                              (headToHeadType === 'all' || match.match_type === headToHeadType) &&
-                              match.match_type === 'singles' &&
-                              ((match.winner1_id === player1.id && match.loser1_id === player2.id) ||
-                               (match.winner1_id === player2.id && match.loser1_id === player1.id))
-                            );
+                            // Fix the filtering logic to respect the headToHeadType filter
+                            const relevantMatches = filteredMatches.filter(match => {
+                              // Apply match type filter correctly
+                              if (headToHeadType !== 'all' && match.match_type !== headToHeadType) {
+                                return false;
+                              }
+                              
+                              // For singles matches
+                              if (match.match_type === 'singles') {
+                                return ((match.winner1_id === player1.id && match.loser1_id === player2.id) || 
+                                       (match.winner1_id === player2.id && match.loser1_id === player1.id));
+                              }
+                              
+                              // For doubles matches
+                              return (
+                                // player1 won against player2
+                                (
+                                  (match.winner1_id === player1.id || match.winner2_id === player1.id) && 
+                                  (match.loser1_id === player2.id || match.loser2_id === player2.id)
+                                ) ||
+                                // player2 won against player1
+                                (
+                                  (match.winner1_id === player2.id || match.winner2_id === player2.id) &&
+                                  (match.loser1_id === player1.id || match.loser2_id === player1.id)
+                                )
+                              );
+                            });
                             
                             const matchesWon = relevantMatches.filter(match => 
-                              match.winner1_id === player1.id
+                              (match.match_type === 'singles' && match.winner1_id === player1.id) ||
+                              (match.match_type === 'doubles' && (match.winner1_id === player1.id || match.winner2_id === player1.id))
                             ).length;
                             
                             const matchesLost = relevantMatches.filter(match => 
-                              match.winner1_id === player2.id
+                              (match.match_type === 'singles' && match.winner1_id === player2.id) ||
+                              (match.match_type === 'doubles' && (match.winner1_id === player2.id || match.winner2_id === player2.id))
                             ).length;
                             
                             const score = `${matchesWon}-${matchesLost}`;
