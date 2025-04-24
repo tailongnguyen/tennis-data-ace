@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -146,6 +145,39 @@ const Analytics = () => {
     ];
   }, [filteredMatches]);
 
+  const aggregatedMetrics = useMemo(() => {
+    const totalMatches = filteredMatches.length;
+    let wins = 0;
+    let losses = 0;
+
+    if (selectedPlayer === "all") {
+      players.forEach(player => {
+        wins += filteredMatches.filter(match => 
+          match.winner1_id === player.id || match.winner2_id === player.id
+        ).length;
+        
+        losses += filteredMatches.filter(match => 
+          match.loser1_id === player.id || match.loser2_id === player.id
+        ).length;
+      });
+    } else {
+      wins = filteredMatches.filter(match => 
+        match.winner1_id === selectedPlayer || match.winner2_id === selectedPlayer
+      ).length;
+      
+      losses = filteredMatches.filter(match => 
+        match.loser1_id === selectedPlayer || match.loser2_id === selectedPlayer
+      ).length;
+    }
+
+    const winRate = wins + losses === 0 ? 0 : Math.round((wins / (wins + losses)) * 100);
+
+    return {
+      totalMatches,
+      winRate
+    };
+  }, [filteredMatches, selectedPlayer, players]);
+
   if (matchesLoading || playersLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -199,47 +231,16 @@ const Analytics = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Win/Loss Ratio</CardTitle>
-            <CardDescription>Overall performance ratio</CardDescription>
+            <CardTitle>Win Rate</CardTitle>
+            <CardDescription>Overall win percentage</CardDescription>
           </CardHeader>
           <CardContent className="h-[200px]">
-            {hasData ? (
-              <ResponsiveContainer width="100%" height="100%">
-                {selectedPlayer === "all" ? (
-                  <BarChart data={winLossData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="wins" fill="#8B5CF6" name="Wins" />
-                    <Bar dataKey="losses" fill="#F97316" name="Losses" />
-                  </BarChart>
-                ) : (
-                  <PieChart>
-                    <Pie
-                      data={winLossData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {winLossData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={index === 0 ? '#8B5CF6' : '#F97316'} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                )}
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-muted-foreground">No match data available</p>
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <span className="text-4xl font-bold text-primary">{aggregatedMetrics.winRate}%</span>
+                <p className="text-sm text-muted-foreground mt-2">Win Rate</p>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -256,7 +257,7 @@ const Analytics = () => {
                     cx="50%"
                     cy="50%"
                     innerRadius={40}
-                    outerRadius={65}
+                    outerRadius={55}
                     fill="#8884d8"
                     dataKey="value"
                     labelLine={true}
@@ -279,41 +280,16 @@ const Analytics = () => {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Player Activity</CardTitle>
-            <CardDescription>Matches played</CardDescription>
+            <CardTitle>Total Matches</CardTitle>
+            <CardDescription>Number of matches played</CardDescription>
           </CardHeader>
           <CardContent className="h-[200px]">
-            {hasData ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={players
-                  .map(player => {
-                    const matchesPlayed = filteredMatches.filter(match => 
-                      match.winner1_id === player.id || 
-                      match.winner2_id === player.id || 
-                      match.loser1_id === player.id || 
-                      match.loser2_id === player.id
-                    ).length;
-                    return {
-                      name: player.name,
-                      matches: matchesPlayed
-                    };
-                  })
-                  .filter(player => player.matches > 0)
-                  .sort((a, b) => b.matches - a.matches)
-                  .slice(0, 5)}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="matches" fill="#0EA5E9" name="Matches Played" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-muted-foreground">No match data available</p>
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <span className="text-4xl font-bold text-primary">{aggregatedMetrics.totalMatches}</span>
+                <p className="text-sm text-muted-foreground mt-2">Matches Played</p>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
       </div>
