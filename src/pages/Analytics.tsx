@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -255,12 +256,11 @@ const Analytics = () => {
                     cx="50%"
                     cy="50%"
                     innerRadius={40}
-                    outerRadius={80}
+                    outerRadius={65}
                     fill="#8884d8"
                     dataKey="value"
                     labelLine={true}
                     label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={70}
                     paddingAngle={2}
                   >
                     {matchTypeData.map((entry, index) => (
