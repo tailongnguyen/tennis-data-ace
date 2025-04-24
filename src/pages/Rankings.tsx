@@ -1,9 +1,8 @@
-
 import { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Calendar } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { usePlayers } from "@/hooks/usePlayers";
@@ -34,10 +33,8 @@ const Rankings = () => {
   const { players, isLoading: playersLoading } = usePlayers();
   const { matches, isLoading: matchesLoading } = useMatches();
 
-  // Combine loading states
   const isLoading = playersLoading || matchesLoading;
 
-  // Filter matches based on date range
   const getFilteredMatches = () => {
     const now = new Date();
     let startDate: Date;
@@ -45,7 +42,7 @@ const Rankings = () => {
 
     if (dateRange === 'custom' && customDateRange.from && customDateRange.to) {
       startDate = customDateRange.from;
-      endDate = addDays(customDateRange.to, 1); // Include the end date
+      endDate = addDays(customDateRange.to, 1);
     } else {
       const days = dateRanges[dateRange]?.days || 30;
       startDate = subDays(now, days);
@@ -57,13 +54,10 @@ const Rankings = () => {
     });
   };
 
-  // Check if a match is a draw
   const isDrawMatch = (match) => {
-    // In tennis, we consider a match a draw if the score is tied
     return match.score === '5-5' || match.score === '6-6';
   };
 
-  // Get all matches for a player
   const getPlayerMatches = (playerId) => {
     return getFilteredMatches().filter(match => 
       match.winner1_id === playerId || 
@@ -73,26 +67,22 @@ const Rankings = () => {
     );
   };
 
-  // Calculate wins for a player
   const getPlayerWins = (playerId) => {
     return getPlayerMatches(playerId).filter(match => 
       !isDrawMatch(match) && (match.winner1_id === playerId || match.winner2_id === playerId)
     ).length;
   };
 
-  // Calculate draws for a player
   const getPlayerDraws = (playerId) => {
     return getPlayerMatches(playerId).filter(match => isDrawMatch(match)).length;
   };
 
-  // Calculate losses for a player
   const getPlayerLosses = (playerId) => {
     return getPlayerMatches(playerId).filter(match => 
       !isDrawMatch(match) && (match.loser1_id === playerId || match.loser2_id === playerId)
     ).length;
   };
 
-  // Calculate win rate for each player (wins / total matches)
   const calculateWinRate = (playerId) => {
     const totalMatches = getPlayerMatches(playerId).length;
     if (totalMatches === 0) return 0;
@@ -101,7 +91,6 @@ const Rankings = () => {
     return (wins / totalMatches) * 100;
   };
 
-  // Calculate not lose percentage ((wins + draws) / total matches)
   const calculateNotLoseRate = (playerId) => {
     const totalMatches = getPlayerMatches(playerId).length;
     if (totalMatches === 0) return 0;
@@ -112,7 +101,6 @@ const Rankings = () => {
     return ((wins + draws) / totalMatches) * 100;
   };
 
-  // Filter players based on search query and match type
   const filteredPlayers = players
     .filter(player => 
       player.name.toLowerCase().includes(searchQuery.toLowerCase())
