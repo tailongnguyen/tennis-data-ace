@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,7 +21,7 @@ import { useMatches } from "@/hooks/useMatches";
 import { usePlayers } from "@/hooks/usePlayers";
 import { format, subMonths, isAfter } from "date-fns";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { Activity, BarChart3, PieChart as PieChartIcon } from "lucide-react";
+import { Activity, BarChart3, PieChartIcon } from "lucide-react";
 
 const COLORS = ['#8B5CF6', '#D946EF', '#F97316', '#0EA5E9', '#10B981', '#EAB308'];
 
@@ -32,7 +31,6 @@ const Analytics = () => {
   const [selectedPlayer, setSelectedPlayer] = useState<string>("all");
   const [timePeriod, setTimePeriod] = useState<string>("year");
 
-  // Get date range based on time period
   const getDateRange = () => {
     const now = new Date();
     switch (timePeriod) {
@@ -47,7 +45,6 @@ const Analytics = () => {
     }
   };
 
-  // Filter matches by time period and player
   const filteredMatches = useMemo(() => {
     const startDate = getDateRange();
     
@@ -68,10 +65,8 @@ const Analytics = () => {
     });
   }, [matches, selectedPlayer, timePeriod]);
 
-  // Calculate win/loss data for the selected player or all players
   const winLossData = useMemo(() => {
     if (selectedPlayer === "all") {
-      // Aggregate data by player
       const playerStats = players.map(player => {
         const wins = filteredMatches.filter(match => 
           match.winner1_id === player.id || match.winner2_id === player.id
@@ -92,7 +87,6 @@ const Analytics = () => {
 
       return playerStats;
     } else {
-      // Get specific player stats
       const wins = filteredMatches.filter(match => 
         match.winner1_id === selectedPlayer || match.winner2_id === selectedPlayer
       ).length;
@@ -105,7 +99,6 @@ const Analytics = () => {
     }
   }, [filteredMatches, selectedPlayer, players]);
 
-  // Generate monthly performance data
   const monthlyPerformanceData = useMemo(() => {
     const last6Months = Array.from({ length: 6 }, (_, i) => {
       const date = subMonths(new Date(), i);
@@ -142,7 +135,6 @@ const Analytics = () => {
     return last6Months;
   }, [filteredMatches, selectedPlayer]);
 
-  // Calculate match type distribution
   const matchTypeData = useMemo(() => {
     const singles = filteredMatches.filter(match => match.match_type === 'singles').length;
     const doubles = filteredMatches.filter(match => match.match_type === 'doubles').length;
@@ -153,7 +145,6 @@ const Analytics = () => {
     ];
   }, [filteredMatches]);
 
-  // Loading state
   if (matchesLoading || playersLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -162,7 +153,6 @@ const Analytics = () => {
     );
   }
 
-  // No data state
   const hasData = filteredMatches.length > 0;
   
   return (
@@ -268,13 +258,16 @@ const Analytics = () => {
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
+                    labelLine={true}
                     label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={70}
+                    paddingAngle={2}
                   >
                     {matchTypeData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip formatter={(value, name) => [value, name]} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -451,7 +444,6 @@ const Analytics = () => {
                               );
                             }
                             
-                            // Find singles matches where these two players faced each other
                             const matchesWon = filteredMatches.filter(match => 
                               match.match_type === 'singles' &&
                               ((match.winner1_id === player1.id && match.loser1_id === player2.id))
