@@ -40,7 +40,23 @@ const Rankings = () => {
     return (wins / playerMatches.length) * 100;
   };
 
-  const isLoading = playersLoading || matchesLoading;
+  // Calculate not lose percentage (wins + draws) / total matches
+  const calculateNotLoseRate = (playerId) => {
+    const playerMatches = matches.filter(match => 
+      match.winner1_id === playerId || 
+      match.winner2_id === playerId || 
+      match.loser1_id === playerId || 
+      match.loser2_id === playerId
+    );
+    
+    if (playerMatches.length === 0) return 0;
+    
+    const wins = matches.filter(match => 
+      match.winner1_id === playerId || match.winner2_id === playerId
+    ).length;
+
+    return ((wins) / playerMatches.length) * 100;
+  };
 
   return (
     <div className="space-y-4">
@@ -88,24 +104,26 @@ const Rankings = () => {
                 <TableHead>Points</TableHead>
                 <TableHead>Total Matches</TableHead>
                 <TableHead>Win %</TableHead>
+                <TableHead>Not Lose %</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6">
+                  <TableCell colSpan={6} className="text-center py-6">
                     Loading rankings...
                   </TableCell>
                 </TableRow>
               ) : filteredPlayers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                     No players found.
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredPlayers.map((player, index) => {
                   const winRate = calculateWinRate(player.id);
+                  const notLoseRate = calculateNotLoseRate(player.id);
                   const totalMatches = matches.filter(match => 
                     match.winner1_id === player.id || 
                     match.winner2_id === player.id || 
@@ -119,9 +137,8 @@ const Rankings = () => {
                       <TableCell>{player.name}</TableCell>
                       <TableCell>{player.ranking_points ?? 0}</TableCell>
                       <TableCell>{totalMatches}</TableCell>
-                      <TableCell>
-                        {winRate.toFixed(1)}%
-                      </TableCell>
+                      <TableCell>{winRate.toFixed(1)}%</TableCell>
+                      <TableCell>{notLoseRate.toFixed(1)}%</TableCell>
                     </TableRow>
                   );
                 })
