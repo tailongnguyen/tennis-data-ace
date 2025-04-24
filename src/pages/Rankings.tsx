@@ -30,10 +30,13 @@ const Rankings = () => {
       match.winner1_id === playerId || match.winner2_id === playerId
     ).length;
     
+    // Correctly calculate win rate: wins divided by total matches
     return (wins / playerMatches.length) * 100;
   };
 
   // Calculate not lose percentage (wins + draws) / total matches
+  // Note: In tennis there are no draws, so this is the same as the win rate
+  // If draws were to be added in the future, this calculation would need to be updated
   const calculateNotLoseRate = (playerId) => {
     const playerMatches = matches.filter(match => 
       match.winner1_id === playerId || 
@@ -48,7 +51,7 @@ const Rankings = () => {
       match.winner1_id === playerId || match.winner2_id === playerId
     ).length;
 
-    return ((wins) / playerMatches.length) * 100;
+    return (wins / playerMatches.length) * 100;
   };
 
   // Combine loading states
