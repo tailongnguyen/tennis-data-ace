@@ -12,6 +12,7 @@ import { addDays, differenceInDays, format, isWithinInterval, parseISO, subDays 
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { DateRange } from "react-day-picker";
 
 const dateRanges = {
   '30d': { label: 'Last 30 Days', days: 30 },
@@ -24,16 +25,16 @@ const Rankings = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [matchType, setMatchType] = useState("all");
   const [dateRange, setDateRange] = useState('30d');
-  const [customDateRange, setCustomDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
+  const [customDateRange, setCustomDateRange] = useState<DateRange>({
     from: undefined,
     to: undefined
   });
 
   const { players, isLoading: playersLoading } = usePlayers();
   const { matches, isLoading: matchesLoading } = useMatches();
+
+  // Combine loading states
+  const isLoading = playersLoading || matchesLoading;
 
   // Filter matches based on date range
   const getFilteredMatches = () => {
@@ -95,9 +96,6 @@ const Rankings = () => {
 
     return ((wins + drawnMatches) / playerMatches.length) * 100;
   };
-
-  // Combine loading states
-  const isLoading = playersLoading || matchesLoading;
 
   // Filter players based on search query and match type
   const filteredPlayers = players
@@ -176,10 +174,7 @@ const Rankings = () => {
                     initialFocus
                     mode="range"
                     defaultMonth={customDateRange.from}
-                    selected={{
-                      from: customDateRange.from,
-                      to: customDateRange.to,
-                    }}
+                    selected={customDateRange}
                     onSelect={setCustomDateRange}
                     numberOfMonths={2}
                     className={cn("p-3 pointer-events-auto")}
