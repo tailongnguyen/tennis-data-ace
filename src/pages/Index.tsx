@@ -1,8 +1,38 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Calendar, Trophy as TrophyIcon, BarChart3 } from "lucide-react";
+import { useMatches } from "@/hooks/useMatches";
+import { usePlayers } from "@/hooks/usePlayers";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { format } from "date-fns";
 
 const Index = () => {
+  const { matches, isLoading: matchesLoading } = useMatches();
+  const { players, isLoading: playersLoading } = usePlayers();
+
+  // Get total number of players
+  const totalPlayers = players.length;
+
+  // Get total number of matches
+  const totalMatches = matches.length;
+
+  // Get top ranked player
+  const topPlayer = players.length > 0 
+    ? players.reduce((prev, current) => 
+        (current.ranking_points ?? 0) > (prev.ranking_points ?? 0) ? current : prev
+      )
+    : null;
+
+  // Get recent matches
+  const recentMatches = matches
+    .slice(0, 5)
+    .sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime());
+
+  if (matchesLoading || playersLoading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="space-y-4">
       <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -15,8 +45,10 @@ const Index = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Add your first player to get started</p>
+            <div className="text-2xl font-bold">{totalPlayers}</div>
+            <p className="text-xs text-muted-foreground">
+              {totalPlayers === 0 ? "Add your first player to get started" : "Active players in the system"}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -25,8 +57,10 @@ const Index = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Record your first match</p>
+            <div className="text-2xl font-bold">{totalMatches}</div>
+            <p className="text-xs text-muted-foreground">
+              {totalMatches === 0 ? "Record your first match" : "Total matches played"}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -35,8 +69,14 @@ const Index = () => {
             <TrophyIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">No rankings yet</p>
+            <div className="text-2xl font-bold">
+              {topPlayer ? topPlayer.name : "-"}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {topPlayer 
+                ? `${topPlayer.ranking_points} points` 
+                : "No rankings yet"}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -45,8 +85,12 @@ const Index = () => {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">No data available</p>
+            <div className="text-2xl font-bold">
+              {totalMatches > 0 ? `${((totalMatches / totalPlayers) || 0).toFixed(1)}` : "-"}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {totalMatches > 0 ? "Matches per player" : "No data available"}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -65,7 +109,38 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">No recent matches. Add your first match to see it here.</p>
+              {recentMatches.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Winners</TableHead>
+                      <TableHead>Losers</TableHead>
+                      <TableHead>Score</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {recentMatches.map((match) => (
+                      <TableRow key={match.id}>
+                        <TableCell>{format(new Date(match.match_date), 'MMM d, yyyy')}</TableCell>
+                        <TableCell className="capitalize">{match.match_type}</TableCell>
+                        <TableCell>
+                          {match.winner1.name}
+                          {match.winner2 && ` / ${match.winner2.name}`}
+                        </TableCell>
+                        <TableCell>
+                          {match.loser1.name}
+                          {match.loser2 && ` / ${match.loser2.name}`}
+                        </TableCell>
+                        <TableCell>{match.score}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-sm text-muted-foreground">No recent matches. Add your first match to see it here.</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
