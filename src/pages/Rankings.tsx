@@ -7,11 +7,13 @@ import { Search } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { usePlayers } from "@/hooks/usePlayers";
+import { useMatches } from "@/hooks/useMatches";
 
 const Rankings = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [matchType, setMatchType] = useState("all");
-  const { players, isLoading } = usePlayers();
+  const { players, isLoading: playersLoading } = usePlayers();
+  const { matches, isLoading: matchesLoading } = useMatches();
 
   // Filter players based on search query and match type
   const filteredPlayers = players
@@ -19,6 +21,26 @@ const Rankings = () => {
       player.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => (b.ranking_points ?? 0) - (a.ranking_points ?? 0));
+
+  // Calculate win rate for each player
+  const calculateWinRate = (playerId) => {
+    const playerMatches = matches.filter(match => 
+      match.winner1_id === playerId || 
+      match.winner2_id === playerId || 
+      match.loser1_id === playerId || 
+      match.loser2_id === playerId
+    );
+    
+    if (playerMatches.length === 0) return 0;
+    
+    const wins = matches.filter(match => 
+      match.winner1_id === playerId || match.winner2_id === playerId
+    ).length;
+    
+    return (wins / playerMatches.length) * 100;
+  };
+
+  const isLoading = playersLoading || matchesLoading;
 
   return (
     <div className="space-y-4">
@@ -45,7 +67,7 @@ const Rankings = () => {
               onValueChange={setMatchType}
             >
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Match Type" />
+                <SelectValue placeholder="Mode" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Matches</SelectItem>
@@ -53,7 +75,7 @@ const Rankings = () => {
                 <SelectItem value="doubles">Doubles</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="secondary" className="bg-blue-500 text-white hover:bg-blue-600">
+            <Button variant="default" className="bg-green-500 text-white hover:bg-green-600">
               Filter
             </Button>
           </div>
@@ -82,21 +104,27 @@ const Rankings = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredPlayers.map((player, index) => (
-                  <TableRow key={player.id}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>{player.name}</TableCell>
-                    <TableCell>{player.ranking_points ?? 0}</TableCell>
-                    <TableCell>
-                      {players.length > 0 ? players.length : 0}
-                    </TableCell>
-                    <TableCell>
-                      {players.length > 0 ? 
-                        `${((player.ranking_points ?? 0) / (3 * players.length) * 100).toFixed(1)}%` 
-                        : '0%'}
-                    </TableCell>
-                  </TableRow>
-                ))
+                filteredPlayers.map((player, index) => {
+                  const winRate = calculateWinRate(player.id);
+                  const totalMatches = matches.filter(match => 
+                    match.winner1_id === player.id || 
+                    match.winner2_id === player.id || 
+                    match.loser1_id === player.id || 
+                    match.loser2_id === player.id
+                  ).length;
+                  
+                  return (
+                    <TableRow key={player.id}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{player.name}</TableCell>
+                      <TableCell>{player.ranking_points ?? 0}</TableCell>
+                      <TableCell>{totalMatches}</TableCell>
+                      <TableCell>
+                        {winRate.toFixed(1)}%
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
