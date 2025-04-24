@@ -22,6 +22,7 @@ import { usePlayers } from "@/hooks/usePlayers";
 import { format, subMonths, isAfter } from "date-fns";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { Activity, BarChart3, PieChartIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const COLORS = ['#8B5CF6', '#D946EF', '#F97316', '#0EA5E9', '#10B981', '#EAB308'];
 
