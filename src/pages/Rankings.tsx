@@ -72,32 +72,43 @@ const Rankings = () => {
     );
   };
 
-  // Calculate win rate for each player
-  const calculateWinRate = (playerId) => {
-    const playerMatches = getPlayerMatches(playerId);
-    
-    if (playerMatches.length === 0) return 0;
-    
-    const wins = playerMatches.filter(match => 
-      match.winner1_id === playerId || match.winner2_id === playerId
+  // Calculate wins for a player
+  const getPlayerWins = (playerId) => {
+    return getPlayerMatches(playerId).filter(match => 
+      !isDrawMatch(match) && (match.winner1_id === playerId || match.winner2_id === playerId)
     ).length;
-    
-    return (wins / playerMatches.length) * 100;
   };
 
-  // Calculate not lose percentage (wins + draws) / total matches
-  const calculateNotLoseRate = (playerId) => {
-    const playerMatches = getPlayerMatches(playerId);
-    
-    if (playerMatches.length === 0) return 0;
-    
-    const draws = playerMatches.filter(match => isDrawMatch(match)).length;
-    
-    const wins = playerMatches.filter(match => 
-      match.winner1_id === playerId || match.winner2_id === playerId
-    ).length;
+  // Calculate draws for a player
+  const getPlayerDraws = (playerId) => {
+    return getPlayerMatches(playerId).filter(match => isDrawMatch(match)).length;
+  };
 
-    return ((wins + draws) / playerMatches.length) * 100;
+  // Calculate losses for a player
+  const getPlayerLosses = (playerId) => {
+    return getPlayerMatches(playerId).filter(match => 
+      !isDrawMatch(match) && (match.loser1_id === playerId || match.loser2_id === playerId)
+    ).length;
+  };
+
+  // Calculate win rate for each player (wins / total matches)
+  const calculateWinRate = (playerId) => {
+    const totalMatches = getPlayerMatches(playerId).length;
+    if (totalMatches === 0) return 0;
+    
+    const wins = getPlayerWins(playerId);
+    return (wins / totalMatches) * 100;
+  };
+
+  // Calculate not lose percentage ((wins + draws) / total matches)
+  const calculateNotLoseRate = (playerId) => {
+    const totalMatches = getPlayerMatches(playerId).length;
+    if (totalMatches === 0) return 0;
+    
+    const wins = getPlayerWins(playerId);
+    const draws = getPlayerDraws(playerId);
+    
+    return ((wins + draws) / totalMatches) * 100;
   };
 
   // Filter players based on search query and match type
@@ -193,7 +204,10 @@ const Rankings = () => {
                 <TableHead>Rank</TableHead>
                 <TableHead>Player</TableHead>
                 <TableHead>Points</TableHead>
-                <TableHead>Total Matches</TableHead>
+                <TableHead>Total</TableHead>
+                <TableHead>Wins</TableHead>
+                <TableHead>Draws</TableHead>
+                <TableHead>Losses</TableHead>
                 <TableHead>Win %</TableHead>
                 <TableHead>Not Lose %</TableHead>
               </TableRow>
@@ -201,21 +215,24 @@ const Rankings = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-6">
+                  <TableCell colSpan={9} className="text-center py-6">
                     Loading rankings...
                   </TableCell>
                 </TableRow>
               ) : filteredPlayers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-6 text-muted-foreground">
                     No players found.
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredPlayers.map((player, index) => {
-                  const winRate = calculateWinRate(player.id);
-                  const notLoseRate = calculateNotLoseRate(player.id);
-                  const totalMatches = getPlayerMatches(player.id).length;
+                  const wins = getPlayerWins(player.id);
+                  const draws = getPlayerDraws(player.id);
+                  const losses = getPlayerLosses(player.id);
+                  const totalMatches = wins + draws + losses;
+                  const winRate = totalMatches > 0 ? (wins / totalMatches) * 100 : 0;
+                  const notLoseRate = totalMatches > 0 ? ((wins + draws) / totalMatches) * 100 : 0;
                   
                   return (
                     <TableRow key={player.id}>
@@ -223,6 +240,9 @@ const Rankings = () => {
                       <TableCell>{player.name}</TableCell>
                       <TableCell>{player.ranking_points ?? 0}</TableCell>
                       <TableCell>{totalMatches}</TableCell>
+                      <TableCell>{wins}</TableCell>
+                      <TableCell>{draws}</TableCell>
+                      <TableCell>{losses}</TableCell>
                       <TableCell>{winRate.toFixed(1)}%</TableCell>
                       <TableCell>{notLoseRate.toFixed(1)}%</TableCell>
                     </TableRow>
