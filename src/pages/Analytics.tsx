@@ -30,6 +30,7 @@ const Analytics = () => {
   const { players, isLoading: playersLoading } = usePlayers();
   const [selectedPlayer, setSelectedPlayer] = useState<string>("all");
   const [timePeriod, setTimePeriod] = useState<string>("year");
+  const [headToHeadType, setHeadToHeadType] = useState<string>("all");
 
   const getDateRange = () => {
     const now = new Date();
@@ -99,52 +100,6 @@ const Analytics = () => {
     }
   }, [filteredMatches, selectedPlayer, players]);
 
-  const monthlyPerformanceData = useMemo(() => {
-    const last6Months = Array.from({ length: 6 }, (_, i) => {
-      const date = subMonths(new Date(), i);
-      return {
-        name: format(date, 'MMM'),
-        month: date.getMonth(),
-        year: date.getFullYear(),
-        wins: 0,
-        losses: 0
-      };
-    }).reverse();
-
-    filteredMatches.forEach(match => {
-      const matchDate = new Date(match.match_date);
-      const monthIndex = last6Months.findIndex(m => 
-        m.month === matchDate.getMonth() && m.year === matchDate.getFullYear()
-      );
-      
-      if (monthIndex >= 0) {
-        if (selectedPlayer === "all" || 
-            match.winner1_id === selectedPlayer || 
-            match.winner2_id === selectedPlayer) {
-          last6Months[monthIndex].wins += 1;
-        }
-        
-        if (selectedPlayer === "all" || 
-            match.loser1_id === selectedPlayer || 
-            match.loser2_id === selectedPlayer) {
-          last6Months[monthIndex].losses += 1;
-        }
-      }
-    });
-
-    return last6Months;
-  }, [filteredMatches, selectedPlayer]);
-
-  const matchTypeData = useMemo(() => {
-    const singles = filteredMatches.filter(match => match.match_type === 'singles').length;
-    const doubles = filteredMatches.filter(match => match.match_type === 'doubles').length;
-    
-    return [
-      { name: 'Singles', value: singles },
-      { name: 'Doubles', value: doubles }
-    ];
-  }, [filteredMatches]);
-
   const aggregatedMetrics = useMemo(() => {
     const totalMatches = filteredMatches.length;
     let wins = 0;
@@ -170,13 +125,64 @@ const Analytics = () => {
       ).length;
     }
 
-    const winRate = wins + losses === 0 ? 0 : Math.round((wins / (wins + losses)) * 100);
+    const total = wins + losses;
+    const winRate = total === 0 ? 0 : Math.round((wins / total) * 100);
+    const notLoseRate = total === 0 ? 0 : Math.round((wins / total) * 100);
 
     return {
-      totalMatches,
-      winRate
+      totalMatches: total,
+      winRate,
+      notLoseRate
     };
   }, [filteredMatches, selectedPlayer, players]);
+
+  const monthlyPerformanceData = useMemo(() => {
+    const last6Months = Array.from({ length: 6 }, (_, i) => {
+      const date = subMonths(new Date(), i);
+      return {
+        name: format(date, 'MMM'),
+        month: date.getMonth(),
+        year: date.getFullYear(),
+        matches: 0,
+        wins: 0,
+        total: 0
+      };
+    }).reverse();
+
+    filteredMatches.forEach(match => {
+      const matchDate = new Date(match.match_date);
+      const monthIndex = last6Months.findIndex(m => 
+        m.month === matchDate.getMonth() && m.year === matchDate.getFullYear()
+      );
+      
+      if (monthIndex >= 0) {
+        last6Months[monthIndex].matches += 1;
+        
+        if (selectedPlayer === "all" || 
+            match.winner1_id === selectedPlayer || 
+            match.winner2_id === selectedPlayer) {
+          last6Months[monthIndex].wins += 1;
+        }
+        last6Months[monthIndex].total += 1;
+      }
+    });
+
+    return last6Months.map(month => ({
+      ...month,
+      winRate: month.total === 0 ? 0 : Math.round((month.wins / month.total) * 100),
+      notLoseRate: month.total === 0 ? 0 : Math.round((month.wins / month.total) * 100)
+    }));
+  }, [filteredMatches, selectedPlayer]);
+
+  const matchTypeData = useMemo(() => {
+    const singles = filteredMatches.filter(match => match.match_type === 'singles').length;
+    const doubles = filteredMatches.filter(match => match.match_type === 'doubles').length;
+    
+    return [
+      { name: 'Singles', value: singles },
+      { name: 'Doubles', value: doubles }
+    ];
+  }, [filteredMatches]);
 
   if (matchesLoading || playersLoading) {
     return (
@@ -231,14 +237,18 @@ const Analytics = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Win Rate</CardTitle>
-            <CardDescription>Overall win percentage</CardDescription>
+            <CardTitle>Performance Rates</CardTitle>
+            <CardDescription>Win and not lose percentages</CardDescription>
           </CardHeader>
           <CardContent className="h-[200px]">
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-full gap-8">
               <div className="text-center">
                 <span className="text-4xl font-bold text-primary">{aggregatedMetrics.winRate}%</span>
                 <p className="text-sm text-muted-foreground mt-2">Win Rate</p>
+              </div>
+              <div className="text-center">
+                <span className="text-4xl font-bold text-primary">{aggregatedMetrics.notLoseRate}%</span>
+                <p className="text-sm text-muted-foreground mt-2">Not Lose Rate</p>
               </div>
             </div>
           </CardContent>
@@ -297,7 +307,7 @@ const Analytics = () => {
       <Tabs defaultValue="trends" className="space-y-4">
         <TabsList>
           <TabsTrigger value="trends">Performance Trends</TabsTrigger>
-          <TabsTrigger value="comparisons">Player Comparisons</TabsTrigger>
+          <TabsTrigger value="productivity">Productivity Trends</TabsTrigger>
           <TabsTrigger value="headtohead">Head-to-Head</TabsTrigger>
         </TabsList>
         <TabsContent value="trends" className="space-y-4">
@@ -305,7 +315,7 @@ const Analytics = () => {
             <CardHeader>
               <CardTitle>Performance Over Time</CardTitle>
               <CardDescription>
-                Wins and losses over the selected period.
+                Win rate and not lose rate over the selected period.
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
@@ -317,8 +327,8 @@ const Analytics = () => {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="wins" stroke="#8B5CF6" name="Wins" />
-                    <Line type="monotone" dataKey="losses" stroke="#F97316" name="Losses" />
+                    <Line type="monotone" dataKey="winRate" stroke="#8B5CF6" name="Win Rate %" />
+                    <Line type="monotone" dataKey="notLoseRate" stroke="#F97316" name="Not Lose Rate %" />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
@@ -329,53 +339,29 @@ const Analytics = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="comparisons" className="space-y-4">
+        <TabsContent value="productivity" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Player Comparison</CardTitle>
+              <CardTitle>Match Productivity</CardTitle>
               <CardDescription>
-                Compare statistics between players.
+                Total matches played over time.
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
-              {hasData && players.length > 1 ? (
+              {hasData ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={players
-                      .map(player => {
-                        const wins = filteredMatches.filter(match => 
-                          match.winner1_id === player.id || match.winner2_id === player.id
-                        ).length;
-                        
-                        const losses = filteredMatches.filter(match => 
-                          match.loser1_id === player.id || match.loser2_id === player.id
-                        ).length;
-                        
-                        const winRate = wins + losses === 0 ? 0 : Math.round((wins / (wins + losses)) * 100);
-                        
-                        return {
-                          name: player.name,
-                          winRate,
-                          rankingPoints: player.ranking_points || 0
-                        };
-                      })
-                      .filter(player => player.winRate > 0 || player.rankingPoints > 0)
-                      .sort((a, b) => b.rankingPoints - a.rankingPoints)
-                    }
-                  >
+                  <BarChart data={monthlyPerformanceData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
-                    <YAxis yAxisId="left" orientation="left" stroke="#8B5CF6" />
-                    <YAxis yAxisId="right" orientation="right" stroke="#0EA5E9" />
+                    <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar yAxisId="left" dataKey="winRate" name="Win Rate (%)" fill="#8B5CF6" />
-                    <Bar yAxisId="right" dataKey="rankingPoints" name="Ranking Points" fill="#0EA5E9" />
+                    <Bar dataKey="matches" name="Total Matches" fill="#8B5CF6" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-full">
-                  <p className="text-muted-foreground">Insufficient data for player comparison.</p>
+                  <p className="text-muted-foreground">No match data available.</p>
                 </div>
               )}
             </CardContent>
@@ -383,11 +369,24 @@ const Analytics = () => {
         </TabsContent>
         <TabsContent value="headtohead" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Head-to-Head Records</CardTitle>
-              <CardDescription>
-                Direct match-up statistics between players.
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Head-to-Head Records</CardTitle>
+                <CardDescription>Direct match-up statistics between players.</CardDescription>
+              </div>
+              <Select
+                value={headToHeadType}
+                onValueChange={setHeadToHeadType}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Match Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Matches</SelectItem>
+                  <SelectItem value="singles">Singles Only</SelectItem>
+                  <SelectItem value="doubles">Doubles Only</SelectItem>
+                </SelectContent>
+              </Select>
             </CardHeader>
             <CardContent className="h-[300px]">
               {hasData ? (
@@ -420,19 +419,35 @@ const Analytics = () => {
                               );
                             }
                             
-                            const matchesWon = filteredMatches.filter(match => 
+                            const relevantMatches = filteredMatches.filter(match => 
+                              (headToHeadType === 'all' || match.match_type === headToHeadType) &&
                               match.match_type === 'singles' &&
-                              ((match.winner1_id === player1.id && match.loser1_id === player2.id))
+                              ((match.winner1_id === player1.id && match.loser1_id === player2.id) ||
+                               (match.winner1_id === player2.id && match.loser1_id === player1.id))
+                            );
+                            
+                            const matchesWon = relevantMatches.filter(match => 
+                              match.winner1_id === player1.id
                             ).length;
                             
-                            const matchesLost = filteredMatches.filter(match => 
-                              match.match_type === 'singles' &&
-                              ((match.winner1_id === player2.id && match.loser1_id === player1.id))
+                            const matchesLost = relevantMatches.filter(match => 
+                              match.winner1_id === player2.id
                             ).length;
+                            
+                            const score = `${matchesWon}-${matchesLost}`;
+                            const isWinning = matchesWon > matchesLost;
+                            const isLosing = matchesWon < matchesLost;
                             
                             return (
-                              <td key={player2.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {matchesWon + matchesLost > 0 ? `${matchesWon}-${matchesLost}` : '-'}
+                              <td key={player2.id} className={cn(
+                                "px-6 py-4 whitespace-nowrap text-sm",
+                                {
+                                  "text-green-600 font-medium": isWinning,
+                                  "text-red-600 font-medium": isLosing,
+                                  "text-gray-500": !isWinning && !isLosing
+                                }
+                              )}>
+                                {matchesWon + matchesLost > 0 ? score : '-'}
                               </td>
                             );
                           })}
