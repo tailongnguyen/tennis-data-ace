@@ -61,12 +61,21 @@ function determineMatchWinners(setScores: { p1: string; p2: string }[]): "p1" | 
   return p1Sets > p2Sets ? "p1" : "p2";
 }
 
+// New helper to normalize score to higher-lower format
+function normalizeScore(score: string): string {
+  const sets = score.split(',');
+  return sets.map(set => {
+    const [a, b] = set.split('-').map(Number);
+    return a > b ? `${a}-${b}` : `${b}-${a}`;
+  }).join(',');
+}
+
 const matchSchema = z.object({
   matchType: z.enum(['singles', 'doubles']),
   player1: z.string().min(1, "Player 1 is required"),
-  player2: z.string().min(1, "Player 2 is required"),
+  player2: z.string().min(1, "Player 2 is required").optional().or(z.string()),
   player3: z.string().min(1, "Player 3 is required"),
-  player4: z.string().optional(),
+  player4: z.string().min(1, "Player 4 is required").optional().or(z.string()),
 });
 
 type MatchFormValues = z.infer<typeof matchSchema>;
@@ -84,7 +93,6 @@ export function RecordMatchDialog() {
     defaultValues: {
       matchType: 'singles',
       player1: "",
-      player2: "",
       player3: "",
     },
   });
@@ -94,16 +102,25 @@ export function RecordMatchDialog() {
   function onSubmit(values: MatchFormValues) {
     // Check if scores are entered
     const validSets = setScores.filter((s) => s.p1 !== "" && s.p2 !== "");
-    const scoreString = validSets
-      .map(({ p1, p2 }) => `${p1}-${p2}`)
-      .join(",");
-
+    
     if (validSets.length === 0) {
       toast.error("Please enter at least one set score");
       return;
     }
-
-    const matchWinner = determineMatchWinners(setScores);
+    
+    // Create score string and normalize it to higher-lower format
+    const scoreString = validSets
+      .map(({ p1, p2 }) => {
+        const scoreA = parseInt(p1, 10);
+        const scoreB = parseInt(p2, 10);
+        // Always store scores in higher-lower format
+        return scoreA > scoreB ? `${scoreA}-${scoreB}` : `${scoreB}-${scoreA}`;
+      })
+      .join(",");
+    
+    console.log("Score string after normalization:", scoreString);
+    
+    const matchWinner = determineMatchWinners(validSets);
     
     // Create match data based on who won
     const matchData: CreateMatchData = {
@@ -124,6 +141,7 @@ export function RecordMatchDialog() {
         setOpen(false);
         form.reset();
         setSetScores(Array(3).fill({ p1: "", p2: "" }));
+        toast.success("Match recorded successfully");
       },
       onError: (error) => {
         console.error("Error submitting match:", error);
