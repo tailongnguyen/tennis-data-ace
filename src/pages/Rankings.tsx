@@ -15,13 +15,6 @@ const Rankings = () => {
   const { players, isLoading: playersLoading } = usePlayers();
   const { matches, isLoading: matchesLoading } = useMatches();
 
-  // Filter players based on search query and match type
-  const filteredPlayers = players
-    .filter(player => 
-      player.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => (b.ranking_points ?? 0) - (a.ranking_points ?? 0));
-
   // Calculate win rate for each player
   const calculateWinRate = (playerId) => {
     const playerMatches = matches.filter(match => 
@@ -57,6 +50,16 @@ const Rankings = () => {
 
     return ((wins) / playerMatches.length) * 100;
   };
+
+  // Combine loading states
+  const isLoading = playersLoading || matchesLoading;
+
+  // Filter players based on search query and match type
+  const filteredPlayers = players
+    .filter(player => 
+      player.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => (b.ranking_points ?? 0) - (a.ranking_points ?? 0));
 
   return (
     <div className="space-y-4">
