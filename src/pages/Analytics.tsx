@@ -434,7 +434,7 @@ const Analytics = () => {
         </TabsContent>
         <TabsContent value="headtohead" className="space-y-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-3">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
               <div className="space-y-2">
                 <CardTitle>Head-to-Head Records</CardTitle>
                 <CardDescription>Direct match-up statistics between players.</CardDescription>
@@ -454,76 +454,80 @@ const Analytics = () => {
               </Select>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full table-fixed divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Player
-                      </th>
-                      {headToHeadColumnPlayers.map(player => (
-                        <th key={player.id} scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          {player.name}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {headToHeadRowPlayers.map(player1 => (
-                      <tr key={player1.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {player1.name}
-                        </td>
-                        {headToHeadColumnPlayers.map(player2 => {
-                          if (player1.id === player2.id) {
-                            return (
-                              <td key={player2.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                -
-                              </td>
-                            );
-                          }
-                          
-                          const relevantMatches = filteredMatches.filter(match => {
-                            if (headToHeadType !== 'all' && match.match_type !== headToHeadType) {
-                              return false;
-                            }
-                            
-                            return playersParticipatedInMatch(player1.id, player2.id, match);
-                          });
-                          
-                          const matchesWon = relevantMatches.filter(match => 
-                            !isDrawMatch(match.score) && playerWonAgainstPlayer(player1.id, player2.id, match)
-                          ).length;
-                          
-                          const matchesLost = relevantMatches.filter(match => 
-                            !isDrawMatch(match.score) && playerWonAgainstPlayer(player2.id, player1.id, match)
-                          ).length;
-                          
-                          const matchesDrawn = relevantMatches.filter(match => 
-                            isDrawMatch(match.score) && playersAreOpponents(player1.id, player2.id, match)
-                          ).length;
-                          
-                          const score = `${matchesWon}-${matchesDrawn}-${matchesLost}`;
-                          const isWinning = matchesWon > matchesLost;
-                          const isLosing = matchesWon < matchesLost;
-                          
-                          return (
-                            <td key={player2.id} className={cn(
-                              "px-6 py-4 whitespace-nowrap text-sm",
-                              {
-                                "text-green-600 font-medium": isWinning,
-                                "text-red-600 font-medium": isLosing,
-                                "text-gray-500": !isWinning && !isLosing
-                              }
-                            )}>
-                              {matchesWon + matchesDrawn + matchesLost > 0 ? score : '-'}
+              <div className="overflow-x-auto w-full">
+                <div className="inline-block min-w-full align-middle">
+                  <div className="overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap sticky left-0 bg-gray-50">
+                            Player
+                          </th>
+                          {headToHeadColumnPlayers.map(player => (
+                            <th key={player.id} scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                              {player.name}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {headToHeadRowPlayers.map(player1 => (
+                          <tr key={player1.id}>
+                            <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white">
+                              {player1.name}
                             </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                            {headToHeadColumnPlayers.map(player2 => {
+                              if (player1.id === player2.id) {
+                                return (
+                                  <td key={player2.id} className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    -
+                                  </td>
+                                );
+                              }
+                              
+                              const relevantMatches = filteredMatches.filter(match => {
+                                if (headToHeadType !== 'all' && match.match_type !== headToHeadType) {
+                                  return false;
+                                }
+                                
+                                return playersParticipatedInMatch(player1.id, player2.id, match);
+                              });
+                              
+                              const matchesWon = relevantMatches.filter(match => 
+                                !isDrawMatch(match.score) && playerWonAgainstPlayer(player1.id, player2.id, match)
+                              ).length;
+                              
+                              const matchesLost = relevantMatches.filter(match => 
+                                !isDrawMatch(match.score) && playerWonAgainstPlayer(player2.id, player1.id, match)
+                              ).length;
+                              
+                              const matchesDrawn = relevantMatches.filter(match => 
+                                isDrawMatch(match.score) && playersAreOpponents(player1.id, player2.id, match)
+                              ).length;
+                              
+                              const score = `${matchesWon}-${matchesDrawn}-${matchesLost}`;
+                              const isWinning = matchesWon > matchesLost;
+                              const isLosing = matchesWon < matchesLost;
+                              
+                              return (
+                                <td key={player2.id} className={cn(
+                                  "px-3 py-4 whitespace-nowrap text-sm",
+                                  {
+                                    "text-green-600 font-medium": isWinning,
+                                    "text-red-600 font-medium": isLosing,
+                                    "text-gray-500": !isWinning && !isLosing
+                                  }
+                                )}>
+                                  {matchesWon + matchesDrawn + matchesLost > 0 ? score : '-'}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
