@@ -7,6 +7,7 @@ import { usePlayers } from "./usePlayers";
 // Constants for the export feature
 const BASE_FEE = 1500000;
 const BET_FEE = 30000;
+const SPECIAL_LOSS_FEE = 60000; // Fee for 6-0 losses
 
 // Type for fee calculation
 export interface PlayerFee {
@@ -52,7 +53,7 @@ export const useExport = () => {
       const matchDate = new Date(match.match_date);
       const matchTypeFilter = matchType === 'all' || match.match_type === matchType;
       return matchDate >= range.startDate && 
-             matchDate <= range.endDate && 
+             matchDate <= range.endDate && // Changed from < to <= to include the end date
              matchTypeFilter;
     });
   }, [matches, range.startDate, range.endDate, matchType]);
@@ -98,12 +99,21 @@ export const useExport = () => {
         isDrawMatch(match.score)
       ).length;
       
-      const losses = playerMatches.filter(match => 
+      // Calculate losses and special losses (6-0)
+      const lossMatches = playerMatches.filter(match => 
         !isDrawMatch(match.score) && (match.loser1_id === player.id || match.loser2_id === player.id)
-      ).length;
+      );
       
-      // Calculate bet fee: 30,000 VND for each loss and draw
-      const betFee = (losses + draws) * BET_FEE;
+      const losses = lossMatches.length;
+      
+      // Count special losses (6-0)
+      const specialLosses = lossMatches.filter(match => match.score === "6-0").length;
+      
+      // Calculate bet fee: 30,000 VND for each regular loss and draw, 60,000 VND for each 6-0 loss
+      const regularLossFee = (losses - specialLosses) * BET_FEE;
+      const specialLossFee = specialLosses * SPECIAL_LOSS_FEE;
+      const drawFee = draws * BET_FEE;
+      const betFee = regularLossFee + specialLossFee + drawFee;
       
       // Base fee is 1,500,000 VND if player is active, 0 otherwise
       const baseFee = player.is_active ? BASE_FEE : 0;
