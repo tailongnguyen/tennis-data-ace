@@ -65,8 +65,8 @@ export const useExport = () => {
       }
 
       if (isDrawMatch(match.score) && 
-         (match.winner1_id === playerId || match.winner2_id === player.id || 
-          match.loser1_id === playerId || match.loser2_id === player.id)) {
+         (match.winner1_id === playerId || match.winner2_id === playerId || 
+          match.loser1_id === playerId || match.loser2_id === playerId)) {
         acc[date] += BET_FEE;
       }
 
