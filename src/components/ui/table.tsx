@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -87,7 +88,7 @@ const TableCell = React.forwardRef<
   <td
     ref={ref}
     className={cn(
-      "p-4 align-middle [&:has([role=checkbox])]:pr-0 overflow-wrap-break-word break-all",
+      "p-4 align-middle [&:has([role=checkbox])]:pr-0 min-w-[100px]",
       className
     )}
     {...props}
