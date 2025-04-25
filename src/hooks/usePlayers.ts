@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -84,10 +83,33 @@ export const usePlayers = () => {
     },
   });
 
+  const deletePlayer = useMutation({
+    mutationFn: async (playerId: string) => {
+      if (!user) {
+        throw new Error("User must be logged in to delete players");
+      }
+
+      const { error } = await supabase
+        .from("players")
+        .delete()
+        .eq('id', playerId);
+
+      if (error) {
+        toast.error("Failed to delete player");
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["players"] });
+      toast.success("Player deleted successfully");
+    },
+  });
+
   return {
     players,
     isLoading,
     addPlayer,
     updatePlayer,
+    deletePlayer,
   };
 };
