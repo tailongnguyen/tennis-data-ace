@@ -456,8 +456,8 @@ const Analytics = () => {
               </Select>
             </CardHeader>
             <CardContent>
-              <div className="relative overflow-hidden">
-                <div className="w-full overflow-auto" style={{ maxHeight: "400px" }}>
+              <div className="max-w-full">
+                <TableScrollArea>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -545,7 +545,7 @@ const Analytics = () => {
                       ))}
                     </TableBody>
                   </Table>
-                </div>
+                </TableScrollArea>
               </div>
             </CardContent>
           </Card>
