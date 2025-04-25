@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from "react";
 import { Player, Match } from "@/types/player";
 import { useMatches } from "./useMatches";
@@ -51,20 +50,20 @@ export const useExport = () => {
   // Generate export data for matches
   const matchExportData = useMemo(() => {
     return filteredMatches.map(match => {
-      const winner1Name = match.winner1?.name || 'Unknown';
-      const winner2Name = match.winner2?.name || '';
-      const loser1Name = match.loser1?.name || 'Unknown';
-      const loser2Name = match.loser2?.name || '';
+      const team1player1 = match.winner1?.name || 'Unknown';
+      const team1player2 = match.winner2?.name || '';
+      const team2player1 = match.loser1?.name || 'Unknown';
+      const team2player2 = match.loser2?.name || '';
       
-      const winnerTeam = match.match_type === 'singles' ? winner1Name : `${winner1Name}, ${winner2Name}`;
-      const loserTeam = match.match_type === 'singles' ? loser1Name : `${loser1Name}, ${loser2Name}`;
+      const team1 = match.match_type === 'singles' ? team1player1 : `${team1player1}, ${team1player2}`;
+      const team2 = match.match_type === 'singles' ? team2player1 : `${team2player1}, ${team2player2}`;
 
       return {
-        time: new Date(match.match_date).toLocaleString(),
-        type: match.match_type,
-        winner: winnerTeam,
-        loser: loserTeam,
-        score: match.score
+        'Time': new Date(match.match_date).toLocaleString(),
+        'Type': match.match_type,
+        'Team 1': team1,
+        'Team 2': team2,
+        'Score': match.score
       };
     });
   }, [filteredMatches]);
@@ -98,6 +97,8 @@ export const useExport = () => {
       
       // Base fee is 1,500,000 VND if player is active, 0 otherwise
       const baseFee = player.is_active ? BASE_FEE : 0;
+      
+      const totalFee = baseFee + betFee;
 
       return {
         name: player.name,
@@ -107,12 +108,32 @@ export const useExport = () => {
         losses,
         baseFee,
         betFee,
-        totalFee: baseFee + betFee
+        totalFee
       };
-    });
+    })
+    .filter(fee => fee.betFee > 0) // Remove players with no bet fee
+    .sort((a, b) => b.totalFee - a.totalFee); // Sort by total fee descending
 
-    return playerFees;
+    return playerFees.map(fee => ({
+      'Player Name': fee.name,
+      'Total Matches': fee.totalMatches,
+      'Total Wins': fee.wins,
+      'Total Draws': fee.draws,
+      'Total Losses': fee.losses,
+      'Base Fee': formatCurrency(fee.baseFee),
+      'Bet Fee': formatCurrency(fee.betFee),
+      'Total Fee': formatCurrency(fee.totalFee)
+    }));
   }, [filteredMatches, players, isDrawMatch]);
+
+  // Helper function to format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', { 
+      style: 'currency', 
+      currency: 'VND',
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
 
   // Export to CSV format
   const exportToCSV = (data: any[], filename: string) => {
