@@ -82,6 +82,7 @@ export type Database = {
           age: number
           created_at: string
           id: string
+          is_active: boolean
           name: string
           playing_style: string
           ranking_points: number | null
@@ -91,6 +92,7 @@ export type Database = {
           age: number
           created_at?: string
           id?: string
+          is_active?: boolean
           name: string
           playing_style?: string
           ranking_points?: number | null
@@ -100,6 +102,7 @@ export type Database = {
           age?: number
           created_at?: string
           id?: string
+          is_active?: boolean
           name?: string
           playing_style?: string
           ranking_points?: number | null
