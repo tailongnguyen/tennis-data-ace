@@ -434,8 +434,8 @@ const Analytics = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="headtohead" className="space-y-4">
-          <Card>
+        <TabsContent value="headtohead" className="space-y-4 max-w-full">
+          <Card className="max-w-full">
             <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
               <div className="space-y-2">
                 <CardTitle>Head-to-Head Records</CardTitle>
@@ -456,7 +456,7 @@ const Analytics = () => {
               </Select>
             </CardHeader>
             <CardContent>
-              <div className="max-w-full">
+              <div className="w-full overflow-hidden" style={{ maxWidth: "100%" }}>
                 <TableScrollArea>
                   <Table>
                     <TableHeader>

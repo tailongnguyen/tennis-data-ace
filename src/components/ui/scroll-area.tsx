@@ -51,7 +51,8 @@ const TableScrollArea = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <div 
     ref={ref}
-    className={cn("relative w-full overflow-hidden rounded-md", className)}
+    className={cn("relative overflow-hidden rounded-md", className)}
+    style={{ maxWidth: "100%" }}
     {...props}
   >
     <div className="overflow-x-auto">
