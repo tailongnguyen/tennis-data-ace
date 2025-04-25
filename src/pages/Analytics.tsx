@@ -456,22 +456,20 @@ const Analytics = () => {
               </Select>
             </CardHeader>
             <CardContent>
-              <div className="w-full overflow-hidden" style={{ maxWidth: "100%" }}>
+              <div className="w-full overflow-hidden" style={{ maxWidth: "75vw" }}>
                 <TableScrollArea>
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead 
-                          className="sticky left-0 z-20 bg-background border-r"
-                          style={{ minWidth: "150px" }}
+                          className="sticky left-0 z-20 bg-background border-r"                          
                         >
                           Player
                         </TableHead>
                         {headToHeadColumnPlayers.map(player => (
                           <TableHead 
                             key={player.id} 
-                            className="text-center whitespace-nowrap"
-                            style={{ minWidth: "100px" }}
+                            className="text-center whitespace-nowrap"                            
                           >
                             {player.name}
                           </TableHead>
@@ -492,8 +490,7 @@ const Analytics = () => {
                               return (
                                 <TableCell 
                                   key={player2.id} 
-                                  className="text-center text-muted-foreground"
-                                  style={{ minWidth: "100px" }}
+                                  className="text-center text-muted-foreground"                                  
                                 >
                                   -
                                 </TableCell>
