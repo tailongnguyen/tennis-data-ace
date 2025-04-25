@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Filter, Calendar } from "lucide-react";
+import { Search, Filter, Calendar, Crown, Medal, Trophy } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { usePlayers } from "@/hooks/usePlayers";
@@ -13,6 +13,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
+import { Badge } from "@/components/ui/badge";
 
 const dateRanges = {
   '30d': { label: 'Last 30 Days', days: 30 },
@@ -118,8 +119,15 @@ const Rankings = () => {
         points += 3;
       }
       
+      // +1 point for draws
+      else if (isDrawMatch(match) && 
+        (match.winner1_id === playerId || match.winner2_id === playerId || 
+         match.loser1_id === playerId || match.loser2_id === playerId)) {
+        points += 1;
+      }
+      
       // -1 point for losses
-      if (!isDrawMatch(match) && (match.loser1_id === playerId || match.loser2_id === playerId)) {
+      else if (!isDrawMatch(match) && (match.loser1_id === playerId || match.loser2_id === playerId)) {
         points -= 1;
       }
     });
@@ -136,6 +144,49 @@ const Rankings = () => {
       dynamicPoints: calculatePlayerPoints(player.id)
     }))
     .sort((a, b) => b.dynamicPoints - a.dynamicPoints);
+
+  // Rank decoration components for top three players
+  const getRankDecoration = (rank) => {
+    switch(rank) {
+      case 1:
+        return (
+          <div className="inline-flex items-center">
+            <span className="mr-1">1</span>
+            <Crown className="h-5 w-5 text-yellow-500" />
+          </div>
+        );
+      case 2:
+        return (
+          <div className="inline-flex items-center">
+            <span className="mr-1">2</span>
+            <Medal className="h-5 w-5 text-gray-400" />
+          </div>
+        );
+      case 3:
+        return (
+          <div className="inline-flex items-center">
+            <span className="mr-1">3</span>
+            <Trophy className="h-5 w-5 text-amber-700" />
+          </div>
+        );
+      default:
+        return rank;
+    }
+  };
+
+  // Get background color for top three rows
+  const getRowHighlightClass = (rank) => {
+    switch(rank) {
+      case 1:
+        return "bg-yellow-50";
+      case 2:
+        return "bg-slate-50";
+      case 3:
+        return "bg-amber-50";
+      default:
+        return "";
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -155,7 +206,7 @@ const Rankings = () => {
       <Card>
         <CardHeader>
           <CardTitle>Player Rankings</CardTitle>
-          <CardDescription>Dynamic rankings based on match performance (Win: +3 points, Loss: -1 point) within the selected date range</CardDescription>
+          <CardDescription>Dynamic rankings based on match performance (Win: +3 points, Draw: +1 point, Loss: -1 point) within the selected date range</CardDescription>
         </CardHeader>
         <CardContent>
           <div className={cn("flex flex-wrap gap-2 mb-4", !showFilters && "hidden")}>
@@ -263,10 +314,11 @@ const Rankings = () => {
                   const totalMatches = wins + draws + losses;
                   const winRate = totalMatches > 0 ? (wins / totalMatches) * 100 : 0;
                   const notLoseRate = totalMatches > 0 ? ((wins + draws) / totalMatches) * 100 : 0;
+                  const rank = index + 1;
                   
                   return (
-                    <TableRow key={player.id}>
-                      <TableCell>{index + 1}</TableCell>
+                    <TableRow key={player.id} className={getRowHighlightClass(rank)}>
+                      <TableCell>{getRankDecoration(rank)}</TableCell>
                       <TableCell>{player.name}</TableCell>
                       <TableCell>{player.dynamicPoints}</TableCell>
                       <TableCell>{totalMatches}</TableCell>
