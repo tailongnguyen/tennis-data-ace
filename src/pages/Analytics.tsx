@@ -23,7 +23,6 @@ import { format, subMonths, isAfter } from "date-fns";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { Activity, BarChart3, PieChartIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TableScrollArea } from "@/components/ui/scroll-area";
 
 const COLORS = ['#8B5CF6', '#D946EF', '#F97316', '#0EA5E9', '#10B981', '#EAB308'];
 
@@ -455,79 +454,77 @@ const Analytics = () => {
               </Select>
             </CardHeader>
             <CardContent>
-              <div className="max-w-full">
-                <div className="border rounded-md">
-                  <TableScrollArea className="max-w-full">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr>
-                          <th className="sticky left-0 z-20 bg-background px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-r whitespace-nowrap">
-                            Player
+              <div className="w-full overflow-hidden border rounded-md">
+                <div className="w-full overflow-x-auto" style={{ maxWidth: '100%' }}>
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-background">
+                        <th className="sticky left-0 z-20 bg-background px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-r whitespace-nowrap">
+                          Player
+                        </th>
+                        {headToHeadColumnPlayers.map(player => (
+                          <th key={player.id} className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap border-b min-w-[70px]">
+                            {player.name}
                           </th>
-                          {headToHeadColumnPlayers.map(player => (
-                            <th key={player.id} className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap border-b min-w-[70px]">
-                              {player.name}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {headToHeadRowPlayers.map(player1 => (
-                          <tr key={player1.id}>
-                            <td className="sticky left-0 z-10 bg-background px-3 py-2 text-sm font-medium text-foreground whitespace-nowrap border-r">
-                              {player1.name}
-                            </td>
-                            {headToHeadColumnPlayers.map(player2 => {
-                              if (player1.id === player2.id) {
-                                return (
-                                  <td key={player2.id} className="px-3 py-2 text-sm text-muted-foreground whitespace-nowrap min-w-[70px]">
-                                    -
-                                  </td>
-                                );
-                              }
-                              
-                              const relevantMatches = filteredMatches.filter(match => {
-                                if (headToHeadType !== 'all' && match.match_type !== headToHeadType) {
-                                  return false;
-                                }
-                                
-                                return playersParticipatedInMatch(player1.id, player2.id, match);
-                              });
-                              
-                              const matchesWon = relevantMatches.filter(match => 
-                                !isDrawMatch(match.score) && playerWonAgainstPlayer(player1.id, player2.id, match)
-                              ).length;
-                              
-                              const matchesLost = relevantMatches.filter(match => 
-                                !isDrawMatch(match.score) && playerWonAgainstPlayer(player2.id, player1.id, match)
-                              ).length;
-                              
-                              const matchesDrawn = relevantMatches.filter(match => 
-                                isDrawMatch(match.score) && playersAreOpponents(player1.id, player2.id, match)
-                              ).length;
-                              
-                              const score = `${matchesWon}-${matchesDrawn}-${matchesLost}`;
-                              const isWinning = matchesWon > matchesLost;
-                              const isLosing = matchesWon < matchesLost;
-                              
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {headToHeadRowPlayers.map(player1 => (
+                        <tr key={player1.id} className="bg-background">
+                          <td className="sticky left-0 z-10 bg-background px-3 py-2 text-sm font-medium text-foreground whitespace-nowrap border-r">
+                            {player1.name}
+                          </td>
+                          {headToHeadColumnPlayers.map(player2 => {
+                            if (player1.id === player2.id) {
                               return (
-                                <td key={player2.id} className={cn(
-                                  "px-3 py-2 whitespace-nowrap text-sm min-w-[70px]",
-                                  {
-                                    "text-green-600 font-medium": isWinning,
-                                    "text-red-600 font-medium": isLosing,
-                                    "text-muted-foreground": !isWinning && !isLosing
-                                  }
-                                )}>
-                                  {matchesWon + matchesDrawn + matchesLost > 0 ? score : '-'}
+                                <td key={player2.id} className="px-3 py-2 text-sm text-muted-foreground whitespace-nowrap min-w-[70px]">
+                                  -
                                 </td>
                               );
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </TableScrollArea>
+                            }
+                            
+                            const relevantMatches = filteredMatches.filter(match => {
+                              if (headToHeadType !== 'all' && match.match_type !== headToHeadType) {
+                                return false;
+                              }
+                              
+                              return playersParticipatedInMatch(player1.id, player2.id, match);
+                            });
+                            
+                            const matchesWon = relevantMatches.filter(match => 
+                              !isDrawMatch(match.score) && playerWonAgainstPlayer(player1.id, player2.id, match)
+                            ).length;
+                            
+                            const matchesLost = relevantMatches.filter(match => 
+                              !isDrawMatch(match.score) && playerWonAgainstPlayer(player2.id, player1.id, match)
+                            ).length;
+                            
+                            const matchesDrawn = relevantMatches.filter(match => 
+                              isDrawMatch(match.score) && playersAreOpponents(player1.id, player2.id, match)
+                            ).length;
+                            
+                            const score = `${matchesWon}-${matchesDrawn}-${matchesLost}`;
+                            const isWinning = matchesWon > matchesLost;
+                            const isLosing = matchesWon < matchesLost;
+                            
+                            return (
+                              <td key={player2.id} className={cn(
+                                "px-3 py-2 whitespace-nowrap text-sm min-w-[70px]",
+                                {
+                                  "text-green-600 font-medium": isWinning,
+                                  "text-red-600 font-medium": isLosing,
+                                  "text-muted-foreground": !isWinning && !isLosing
+                                }
+                              )}>
+                                {matchesWon + matchesDrawn + matchesLost > 0 ? score : '-'}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </CardContent>

@@ -44,22 +44,16 @@ const ScrollBar = React.forwardRef<
 ))
 ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName
 
-// Create a specialized HorizontalScrollArea for tables with fixed first column
+// Create an improved TableScrollArea for tables with fixed first column
 const TableScrollArea = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
 >(({ className, children, ...props }, ref) => (
-  <ScrollAreaPrimitive.Root
-    ref={ref}
-    className={cn("relative overflow-hidden", className)}
-    {...props}
-  >
-    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit] overflow-x-scroll">
+  <div className="w-full overflow-hidden">
+    <div className="w-full overflow-x-auto">
       {children}
-    </ScrollAreaPrimitive.Viewport>
-    <ScrollBar orientation="horizontal" />
-    <ScrollAreaPrimitive.Corner />
-  </ScrollAreaPrimitive.Root>
+    </div>
+  </div>
 ))
 TableScrollArea.displayName = "TableScrollArea"
 
