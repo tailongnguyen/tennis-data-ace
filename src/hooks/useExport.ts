@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from "react";
 import { Player, Match } from "@/types/player";
 import { useMatches } from "./useMatches";
@@ -33,6 +34,15 @@ export const useExport = () => {
   
   const { matches, isLoading: matchesLoading, isDrawMatch } = useMatches();
   const { players, isLoading: playersLoading } = usePlayers();
+
+  // Helper function to format currency - MOVED BEFORE IT'S USED
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', { 
+      style: 'currency', 
+      currency: 'VND',
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
 
   // Filter matches based on date range and match type
   const filteredMatches = useMemo(() => {
@@ -125,15 +135,6 @@ export const useExport = () => {
       'Total Fee': formatCurrency(fee.totalFee)
     }));
   }, [filteredMatches, players, isDrawMatch]);
-
-  // Helper function to format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { 
-      style: 'currency', 
-      currency: 'VND',
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
 
   // Export to CSV format
   const exportToCSV = (data: any[], filename: string) => {
