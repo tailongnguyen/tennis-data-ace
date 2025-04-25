@@ -107,11 +107,35 @@ const Rankings = () => {
     return ((wins + draws) / totalMatches) * 100;
   };
 
+  // Calculate dynamic points for each player based on filtered matches
+  const calculatePlayerPoints = (playerId) => {
+    let points = 0;
+    const filteredMatches = getFilteredMatches();
+    
+    filteredMatches.forEach(match => {
+      // +3 points for wins
+      if (!isDrawMatch(match) && (match.winner1_id === playerId || match.winner2_id === playerId)) {
+        points += 3;
+      }
+      
+      // -1 point for losses
+      if (!isDrawMatch(match) && (match.loser1_id === playerId || match.loser2_id === playerId)) {
+        points -= 1;
+      }
+    });
+    
+    return points;
+  };
+
   const filteredPlayers = players
     .filter(player => 
       player.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
-    .sort((a, b) => (b.ranking_points ?? 0) - (a.ranking_points ?? 0));
+    .map(player => ({
+      ...player,
+      dynamicPoints: calculatePlayerPoints(player.id)
+    }))
+    .sort((a, b) => b.dynamicPoints - a.dynamicPoints);
 
   return (
     <div className="space-y-4">
@@ -131,7 +155,7 @@ const Rankings = () => {
       <Card>
         <CardHeader>
           <CardTitle>Player Rankings</CardTitle>
-          <CardDescription>Current rankings based on match performance (Win: +3 points, Loss: -1 point)</CardDescription>
+          <CardDescription>Dynamic rankings based on match performance (Win: +3 points, Loss: -1 point) within the selected date range</CardDescription>
         </CardHeader>
         <CardContent>
           <div className={cn("flex flex-wrap gap-2 mb-4", !showFilters && "hidden")}>
@@ -244,7 +268,7 @@ const Rankings = () => {
                     <TableRow key={player.id}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{player.name}</TableCell>
-                      <TableCell>{player.ranking_points ?? 0}</TableCell>
+                      <TableCell>{player.dynamicPoints}</TableCell>
                       <TableCell>{totalMatches}</TableCell>
                       <TableCell>{wins}</TableCell>
                       <TableCell>{draws}</TableCell>
