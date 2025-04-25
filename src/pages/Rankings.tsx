@@ -225,14 +225,14 @@ const Rankings = () => {
       case 2:
         return "bg-slate-50";
       case 3:
-        return "bg-blue-50";
+        return "bg-amber-50";
       default:
         return "";
     }
   };
 
   const SortIcon = ({ field }: { field: SortField }) => {
-    if (field !== sortField) return null;
+    if (field !== sortField) return <ArrowDown className="ml-1 h-4 w-4 inline opacity-30" />;
     return sortDirection === 'asc' ? 
       <ArrowUp className="ml-1 h-4 w-4 inline" /> : 
       <ArrowDown className="ml-1 h-4 w-4 inline" />;
