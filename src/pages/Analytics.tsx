@@ -531,8 +531,7 @@ const Analytics = () => {
                                     "text-red-600 font-medium": isLosing,
                                     "text-muted-foreground": !isWinning && !isLosing
                                   }
-                                )}
-                                style={{ minWidth: "100px" }}
+                                )}                                
                               >
                                 {matchesWon + matchesDrawn + matchesLost > 0 ? score : '-'}
                               </TableCell>
