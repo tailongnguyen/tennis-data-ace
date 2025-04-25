@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -212,6 +213,28 @@ const Analytics = () => {
   const headToHeadColumnPlayers = players.filter(player => 
     selectedPlayer === "all" || player.id !== selectedPlayer
   );
+  
+  // Helper function to check if two players participated in a match
+  const playersParticipatedInMatch = (player1Id: string, player2Id: string, match: any) => {
+    const player1InMatch = 
+      match.winner1_id === player1Id || 
+      match.winner2_id === player1Id || 
+      match.loser1_id === player1Id || 
+      match.loser2_id === player1Id;
+    
+    const player2InMatch = 
+      match.winner1_id === player2Id || 
+      match.winner2_id === player2Id || 
+      match.loser1_id === player2Id || 
+      match.loser2_id === player2Id;
+    
+    return player1InMatch && player2InMatch;
+  };
+  
+  // Helper function to check if a player won in a match
+  const playerWonMatch = (playerId: string, match: any) => {
+    return match.winner1_id === playerId || match.winner2_id === playerId;
+  };
   
   return (
     <div className="space-y-4">
@@ -438,52 +461,35 @@ const Analytics = () => {
                               );
                             }
                             
+                            // Filter matches involving both players
                             const relevantMatches = filteredMatches.filter(match => {
                               if (headToHeadType !== 'all' && match.match_type !== headToHeadType) {
                                 return false;
                               }
                               
-                              if (match.match_type === 'singles') {
-                                return ((match.winner1_id === player1.id && match.loser1_id === player2.id) || 
-                                       (match.winner1_id === player2.id && match.loser1_id === player1.id));
-                              }
-                              
-                              return (
-                                (match.winner1_id === player1.id || match.winner2_id === player1.id) && 
-                                (match.loser1_id === player2.id || match.loser2_id === player2.id)
-                              );
+                              // Check if both players participated in this match
+                              return playersParticipatedInMatch(player1.id, player2.id, match);
                             });
                             
+                            // Count wins for player1 against player2
                             const matchesWon = relevantMatches.filter(match => {
                               if (isDrawMatch(match.score)) return false;
                               
-                              if (match.match_type === 'singles') {
-                                return match.winner1_id === player1.id && match.loser1_id === player2.id;
-                              }
-                              return (match.winner1_id === player1.id || match.winner2_id === player1.id) && 
-                                     (match.loser1_id === player2.id || match.loser2_id === player2.id);
+                              // Check if player1 won and player2 lost
+                              return playerWonMatch(player1.id, match) && !playerWonMatch(player2.id, match);
                             }).length;
                             
+                            // Count losses for player1 against player2
                             const matchesLost = relevantMatches.filter(match => {
                               if (isDrawMatch(match.score)) return false;
                               
-                              if (match.match_type === 'singles') {
-                                return match.winner1_id === player2.id && match.loser1_id === player1.id;
-                              }
-                              return (match.winner1_id === player2.id || match.winner2_id === player2.id) && 
-                                     (match.loser1_id === player1.id || match.loser2_id === player1.id);
+                              // Check if player2 won and player1 lost
+                              return playerWonMatch(player2.id, match) && !playerWonMatch(player1.id, match);
                             }).length;
                             
+                            // Count draws between player1 and player2
                             const matchesDrawn = relevantMatches.filter(match => 
-                              isDrawMatch(match.score) &&
-                              ((match.match_type === 'singles' && 
-                                ((match.winner1_id === player1.id && match.loser1_id === player2.id) || 
-                                 (match.winner1_id === player2.id && match.loser1_id === player1.id))) ||
-                               (match.match_type === 'doubles' && 
-                                (((match.winner1_id === player1.id || match.winner2_id === player1.id) && 
-                                  (match.loser1_id === player2.id || match.loser2_id === player2.id)) || 
-                                 ((match.winner1_id === player2.id || match.winner2_id === player2.id) && 
-                                  (match.loser1_id === player1.id || match.loser2_id === player1.id)))))
+                              isDrawMatch(match.score)
                             ).length;
                             
                             const score = `${matchesWon}-${matchesDrawn}-${matchesLost}`;
