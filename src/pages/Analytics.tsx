@@ -214,6 +214,30 @@ const Analytics = () => {
     selectedPlayer === "all" || player.id !== selectedPlayer
   );
   
+  // Helper function to check if players are opponents in a match
+  const playersAreOpponents = (player1Id: string, player2Id: string, match: any) => {
+    const player1IsWinner = match.winner1_id === player1Id || match.winner2_id === player1Id;
+    const player1IsLoser = match.loser1_id === player1Id || match.loser2_id === player1Id;
+    const player2IsWinner = match.winner1_id === player2Id || match.winner2_id === player2Id;
+    const player2IsLoser = match.loser1_id === player2Id || match.loser2_id === player2Id;
+    
+    // Players are opponents if one is on the winning side and one is on the losing side
+    return (player1IsWinner && player2IsLoser) || (player1IsLoser && player2IsWinner);
+  };
+  
+  // Helper function to check if players are partners in a match
+  const playersArePartners = (player1Id: string, player2Id: string, match: any) => {
+    const bothWinners = 
+      (match.winner1_id === player1Id && match.winner2_id === player2Id) || 
+      (match.winner1_id === player2Id && match.winner2_id === player1Id);
+      
+    const bothLosers = 
+      (match.loser1_id === player1Id && match.loser2_id === player2Id) || 
+      (match.loser1_id === player2Id && match.loser2_id === player1Id);
+      
+    return bothWinners || bothLosers;
+  };
+  
   // Helper function to check if two players participated in a match
   const playersParticipatedInMatch = (player1Id: string, player2Id: string, match: any) => {
     const player1InMatch = 
@@ -228,12 +252,17 @@ const Analytics = () => {
       match.loser1_id === player2Id || 
       match.loser2_id === player2Id;
     
-    return player1InMatch && player2InMatch;
+    return player1InMatch && player2InMatch && !playersArePartners(player1Id, player2Id, match);
   };
   
-  // Helper function to check if a player won in a match
-  const playerWonMatch = (playerId: string, match: any) => {
-    return match.winner1_id === playerId || match.winner2_id === playerId;
+  // Helper function to check if a player won against another player in a match
+  const playerWonAgainstPlayer = (player1Id: string, player2Id: string, match: any) => {
+    if (!playersAreOpponents(player1Id, player2Id, match)) {
+      return false;
+    }
+    
+    const player1IsWinner = match.winner1_id === player1Id || match.winner2_id === player1Id;
+    return player1IsWinner;
   };
   
   return (
@@ -461,35 +490,29 @@ const Analytics = () => {
                               );
                             }
                             
-                            // Filter matches involving both players
+                            // Filter matches involving both players but ensure they're not partners
                             const relevantMatches = filteredMatches.filter(match => {
                               if (headToHeadType !== 'all' && match.match_type !== headToHeadType) {
                                 return false;
                               }
                               
-                              // Check if both players participated in this match
+                              // Only include matches where players are opponents (not partners)
                               return playersParticipatedInMatch(player1.id, player2.id, match);
                             });
                             
                             // Count wins for player1 against player2
-                            const matchesWon = relevantMatches.filter(match => {
-                              if (isDrawMatch(match.score)) return false;
-                              
-                              // Check if player1 won and player2 lost
-                              return playerWonMatch(player1.id, match) && !playerWonMatch(player2.id, match);
-                            }).length;
+                            const matchesWon = relevantMatches.filter(match => 
+                              !isDrawMatch(match.score) && playerWonAgainstPlayer(player1.id, player2.id, match)
+                            ).length;
                             
                             // Count losses for player1 against player2
-                            const matchesLost = relevantMatches.filter(match => {
-                              if (isDrawMatch(match.score)) return false;
-                              
-                              // Check if player2 won and player1 lost
-                              return playerWonMatch(player2.id, match) && !playerWonMatch(player1.id, match);
-                            }).length;
+                            const matchesLost = relevantMatches.filter(match => 
+                              !isDrawMatch(match.score) && playerWonAgainstPlayer(player2.id, player1.id, match)
+                            ).length;
                             
-                            // Count draws between player1 and player2
+                            // Count draws between player1 and player2 (only when they're opponents)
                             const matchesDrawn = relevantMatches.filter(match => 
-                              isDrawMatch(match.score)
+                              isDrawMatch(match.score) && playersAreOpponents(player1.id, player2.id, match)
                             ).length;
                             
                             const score = `${matchesWon}-${matchesDrawn}-${matchesLost}`;
