@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Player, Match } from "@/types/player";
 import { useMatches } from "./useMatches";
 import { usePlayers } from "./usePlayers";
+import * as XLSX from 'xlsx';
 
 // Constants for the export feature
 const BASE_FEE = 1500000;
@@ -205,21 +206,23 @@ export const useExport = () => {
     document.body.removeChild(link);
   };
 
-  // Export to PDF format (placeholder)
-  const exportToPDF = (data: any[], filename: string) => {
-    console.log('PDF export not implemented yet', data, filename);
-    alert('PDF export is not implemented in this version.');
+  // Export to Excel format
+  const exportToExcel = (data: any[], filename: string) => {
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+    XLSX.writeFile(workbook, `${filename}.xlsx`);
   };
 
   // Handle export
-  const handleExport = (type: 'matches' | 'fees', format: 'csv' | 'pdf') => {
+  const handleExport = (type: 'matches' | 'fees', format: 'csv' | 'excel') => {
     const data = type === 'matches' ? matchExportData : feeExportData;
     const filename = `tennis-tracker-${type}-${new Date().toISOString().split('T')[0]}`;
     
     if (format === 'csv') {
       exportToCSV(data, filename);
     } else {
-      exportToPDF(data, filename);
+      exportToExcel(data, filename);
     }
   };
 

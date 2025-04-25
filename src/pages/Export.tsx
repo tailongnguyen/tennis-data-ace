@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,7 @@ const Export = () => {
     isLoading 
   } = useExport();
   
-  const [exportFormat, setExportFormat] = useState<'csv' | 'pdf'>('csv');
+  const [exportFormat, setExportFormat] = useState<'csv' | 'excel'>('csv');
   const [activeTab, setActiveTab] = useState<'matches' | 'fees'>('matches');
   
   const handleExportClick = () => {
@@ -66,14 +65,14 @@ const Export = () => {
                   <Label htmlFor="export-format">Export Format</Label>
                   <Select 
                     value={exportFormat} 
-                    onValueChange={(val) => setExportFormat(val as 'csv' | 'pdf')}
+                    onValueChange={(val) => setExportFormat(val as 'csv' | 'excel')}
                   >
                     <SelectTrigger id="export-format">
                       <SelectValue placeholder="Select format" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="csv">CSV</SelectItem>
-                      <SelectItem value="pdf">PDF</SelectItem>
+                      <SelectItem value="excel">Excel</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -236,11 +235,11 @@ const Export = () => {
               
               <div className="flex justify-end space-x-2">
                 <Button variant="outline">Cancel</Button>
-                <Button onClick={handleExportClick}>
+                <Button onClick={() => handleExport(activeTab, exportFormat)}>
                   {exportFormat === 'csv' ? (
                     <FileSpreadsheet className="mr-2 h-4 w-4" />
                   ) : (
-                    <FileText className="mr-2 h-4 w-4" />
+                    <FileDown className="mr-2 h-4 w-4" />
                   )}
                   Export {activeTab === 'matches' ? 'Matches' : 'Fees'}
                 </Button>
