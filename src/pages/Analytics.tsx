@@ -23,6 +23,8 @@ import { format, subMonths, isAfter } from "date-fns";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { Activity, BarChart3, PieChartIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TableScrollArea } from "@/components/ui/scroll-area";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 const COLORS = ['#8B5CF6', '#D946EF', '#F97316', '#0EA5E9', '#10B981', '#EAB308'];
 
@@ -454,33 +456,47 @@ const Analytics = () => {
               </Select>
             </CardHeader>
             <CardContent>
-              <div className="w-full overflow-hidden border rounded-md">
-                <div className="w-full overflow-x-auto" style={{ maxWidth: '100%' }}>
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-background">
-                        <th className="sticky left-0 z-20 bg-background px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-r whitespace-nowrap">
+              <div className="relative overflow-hidden">
+                <div className="w-full overflow-auto" style={{ maxHeight: "400px" }}>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead 
+                          className="sticky left-0 z-20 bg-background border-r"
+                          style={{ minWidth: "150px" }}
+                        >
                           Player
-                        </th>
+                        </TableHead>
                         {headToHeadColumnPlayers.map(player => (
-                          <th key={player.id} className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap border-b min-w-[70px]">
+                          <TableHead 
+                            key={player.id} 
+                            className="text-center whitespace-nowrap"
+                            style={{ minWidth: "100px" }}
+                          >
                             {player.name}
-                          </th>
+                          </TableHead>
                         ))}
-                      </tr>
-                    </thead>
-                    <tbody>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {headToHeadRowPlayers.map(player1 => (
-                        <tr key={player1.id} className="bg-background">
-                          <td className="sticky left-0 z-10 bg-background px-3 py-2 text-sm font-medium text-foreground whitespace-nowrap border-r">
+                        <TableRow key={player1.id}>
+                          <TableCell 
+                            className="sticky left-0 z-10 bg-background font-medium border-r"
+                            style={{ minWidth: "150px" }}
+                          >
                             {player1.name}
-                          </td>
+                          </TableCell>
                           {headToHeadColumnPlayers.map(player2 => {
                             if (player1.id === player2.id) {
                               return (
-                                <td key={player2.id} className="px-3 py-2 text-sm text-muted-foreground whitespace-nowrap min-w-[70px]">
+                                <TableCell 
+                                  key={player2.id} 
+                                  className="text-center text-muted-foreground"
+                                  style={{ minWidth: "100px" }}
+                                >
                                   -
-                                </td>
+                                </TableCell>
                               );
                             }
                             
@@ -509,22 +525,26 @@ const Analytics = () => {
                             const isLosing = matchesWon < matchesLost;
                             
                             return (
-                              <td key={player2.id} className={cn(
-                                "px-3 py-2 whitespace-nowrap text-sm min-w-[70px]",
-                                {
-                                  "text-green-600 font-medium": isWinning,
-                                  "text-red-600 font-medium": isLosing,
-                                  "text-muted-foreground": !isWinning && !isLosing
-                                }
-                              )}>
+                              <TableCell 
+                                key={player2.id} 
+                                className={cn(
+                                  "text-center whitespace-nowrap",
+                                  {
+                                    "text-green-600 font-medium": isWinning,
+                                    "text-red-600 font-medium": isLosing,
+                                    "text-muted-foreground": !isWinning && !isLosing
+                                  }
+                                )}
+                                style={{ minWidth: "100px" }}
+                              >
                                 {matchesWon + matchesDrawn + matchesLost > 0 ? score : '-'}
-                              </td>
+                              </TableCell>
                             );
                           })}
-                        </tr>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
             </CardContent>

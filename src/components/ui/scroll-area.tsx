@@ -44,13 +44,17 @@ const ScrollBar = React.forwardRef<
 ))
 ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName
 
-// Create an improved TableScrollArea for tables with fixed first column
+// Improved TableScrollArea specifically for tables with fixed first column
 const TableScrollArea = React.forwardRef<
-  React.ElementRef<typeof ScrollAreaPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
 >(({ className, children, ...props }, ref) => (
-  <div className="w-full overflow-hidden">
-    <div className="w-full overflow-x-auto">
+  <div 
+    ref={ref}
+    className={cn("relative w-full overflow-hidden border rounded-md", className)}
+    {...props}
+  >
+    <div className="overflow-x-auto">
       {children}
     </div>
   </div>
