@@ -135,7 +135,7 @@ const Rankings = () => {
 
   const handleSort = (field: SortField) => {
     if (field === sortField) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortDirection(sortDirection === 'desc' ? 'asc' : 'asc');
     } else {
       setSortField(field);
       setSortDirection('desc');
@@ -168,7 +168,7 @@ const Rankings = () => {
       });
 
     return filtered.sort((a, b) => {
-      const multiplier = sortDirection === 'asc' ? 1 : -1;
+      const multiplier = sortDirection === 'desc' ? 1 : -1;
       switch (sortField) {
         case 'points':
           return (b.dynamicPoints - a.dynamicPoints) * multiplier;
@@ -223,9 +223,9 @@ const Rankings = () => {
       case 1:
         return "bg-yellow-50";
       case 2:
-        return "bg-slate-50";
+        return "bg-[#f1f3f8]";
       case 3:
-        return "bg-amber-50";
+        return "bg-[#fbf4e3]";
       default:
         return "";
     }
