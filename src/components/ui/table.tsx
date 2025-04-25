@@ -76,6 +76,7 @@ const TableHead = React.forwardRef<
       "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
       className
     )}
+    style={{ minWidth: "100px" }}
     {...props}
   />
 ))
@@ -88,9 +89,10 @@ const TableCell = React.forwardRef<
   <td
     ref={ref}
     className={cn(
-      "p-4 align-middle [&:has([role=checkbox])]:pr-0 min-w-[100px]",
+      "p-4 align-middle [&:has([role=checkbox])]:pr-0",
       className
     )}
+    style={{ minWidth: "100px" }}
     {...props}
   />
 ))
