@@ -23,6 +23,7 @@ import { format, subMonths, isAfter } from "date-fns";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { Activity, BarChart3, PieChartIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TableScrollArea } from "@/components/ui/scroll-area";
 
 const COLORS = ['#8B5CF6', '#D946EF', '#F97316', '#0EA5E9', '#10B981', '#EAB308'];
 
@@ -261,9 +262,9 @@ const Analytics = () => {
   
   return (
     <div className="space-y-4 max-w-[1400px] mx-auto">
-      <h1 className="text-3xl font-bold">Performance Analytics</h1>
+      <h1 className="text-3xl font-bold mb-2">Performance Analytics</h1>
       
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 mb-4">
         <p className="text-muted-foreground">Analyze player performance and statistics.</p>
         <div className="flex items-center gap-2">
           <Select 
@@ -454,32 +455,32 @@ const Analytics = () => {
               </Select>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto w-full">
-                <div className="inline-block min-w-full align-middle">
-                  <div className="overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+              <div className="max-w-full">
+                <div className="border rounded-md">
+                  <TableScrollArea className="max-w-full">
+                    <table className="w-full border-collapse">
+                      <thead>
                         <tr>
-                          <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap sticky left-0 bg-gray-50">
+                          <th className="sticky left-0 z-20 bg-background px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-r whitespace-nowrap">
                             Player
                           </th>
                           {headToHeadColumnPlayers.map(player => (
-                            <th key={player.id} scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                            <th key={player.id} className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap border-b min-w-[70px]">
                               {player.name}
                             </th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody>
                         {headToHeadRowPlayers.map(player1 => (
                           <tr key={player1.id}>
-                            <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white">
+                            <td className="sticky left-0 z-10 bg-background px-3 py-2 text-sm font-medium text-foreground whitespace-nowrap border-r">
                               {player1.name}
                             </td>
                             {headToHeadColumnPlayers.map(player2 => {
                               if (player1.id === player2.id) {
                                 return (
-                                  <td key={player2.id} className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  <td key={player2.id} className="px-3 py-2 text-sm text-muted-foreground whitespace-nowrap min-w-[70px]">
                                     -
                                   </td>
                                 );
@@ -511,11 +512,11 @@ const Analytics = () => {
                               
                               return (
                                 <td key={player2.id} className={cn(
-                                  "px-3 py-4 whitespace-nowrap text-sm",
+                                  "px-3 py-2 whitespace-nowrap text-sm min-w-[70px]",
                                   {
                                     "text-green-600 font-medium": isWinning,
                                     "text-red-600 font-medium": isLosing,
-                                    "text-gray-500": !isWinning && !isLosing
+                                    "text-muted-foreground": !isWinning && !isLosing
                                   }
                                 )}>
                                   {matchesWon + matchesDrawn + matchesLost > 0 ? score : '-'}
@@ -526,7 +527,7 @@ const Analytics = () => {
                         ))}
                       </tbody>
                     </table>
-                  </div>
+                  </TableScrollArea>
                 </div>
               </div>
             </CardContent>
