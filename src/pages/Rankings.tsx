@@ -1,9 +1,8 @@
-
 import { useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Filter, Calendar, Crown, Medal, Trophy } from "lucide-react";
+import { Search, Filter, Calendar, Crown, Medal, Trophy, ArrowUp, ArrowDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { usePlayers } from "@/hooks/usePlayers";
@@ -13,7 +12,6 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
-import { Badge } from "@/components/ui/badge";
 
 const dateRanges = {
   '30d': { label: 'Last 30 Days', days: 30 },
@@ -22,15 +20,20 @@ const dateRanges = {
   'custom': { label: 'Custom Range', days: null }
 };
 
+type SortField = 'points' | 'total' | 'wins' | 'draws' | 'losses' | 'winRate' | 'notLoseRate';
+type SortDirection = 'asc' | 'desc';
+
 const Rankings = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [matchType, setMatchType] = useState("all");
   const [dateRange, setDateRange] = useState('30d');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [customDateRange, setCustomDateRange] = useState<DateRange>({
     from: undefined,
     to: undefined
   });
+  const [sortField, setSortField] = useState<SortField>('points');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const { players, isLoading: playersLoading } = usePlayers();
   const { matches, isLoading: matchesLoading } = useMatches();
@@ -54,7 +57,6 @@ const Rankings = () => {
       const matchDate = parseISO(match.match_date);
       const dateInRange = isWithinInterval(matchDate, { start: startDate, end: endDate });
       
-      // Apply match type filter
       const matchTypeFilter = matchType === 'all' || match.match_type === matchType;
       
       return dateInRange && matchTypeFilter;
@@ -108,25 +110,21 @@ const Rankings = () => {
     return ((wins + draws) / totalMatches) * 100;
   };
 
-  // Calculate dynamic points for each player based on filtered matches
   const calculatePlayerPoints = (playerId) => {
     let points = 0;
     const filteredMatches = getFilteredMatches();
     
     filteredMatches.forEach(match => {
-      // +3 points for wins
       if (!isDrawMatch(match) && (match.winner1_id === playerId || match.winner2_id === playerId)) {
         points += 3;
       }
       
-      // +1 point for draws
       else if (isDrawMatch(match) && 
         (match.winner1_id === playerId || match.winner2_id === playerId || 
          match.loser1_id === playerId || match.loser2_id === playerId)) {
         points += 1;
       }
       
-      // -1 point for losses
       else if (!isDrawMatch(match) && (match.loser1_id === playerId || match.loser2_id === playerId)) {
         points -= 1;
       }
@@ -135,17 +133,63 @@ const Rankings = () => {
     return points;
   };
 
-  const filteredPlayers = players
-    .filter(player => 
-      player.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .map(player => ({
-      ...player,
-      dynamicPoints: calculatePlayerPoints(player.id)
-    }))
-    .sort((a, b) => b.dynamicPoints - a.dynamicPoints);
+  const handleSort = (field: SortField) => {
+    if (field === sortField) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
 
-  // Rank decoration components for top three players
+  const getSortedPlayers = () => {
+    const filtered = players
+      .filter(player => 
+        player.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .map(player => {
+        const wins = getPlayerWins(player.id);
+        const draws = getPlayerDraws(player.id);
+        const losses = getPlayerLosses(player.id);
+        const totalMatches = wins + draws + losses;
+        const winRate = totalMatches > 0 ? (wins / totalMatches) * 100 : 0;
+        const notLoseRate = totalMatches > 0 ? ((wins + draws) / totalMatches) * 100 : 0;
+        
+        return {
+          ...player,
+          dynamicPoints: calculatePlayerPoints(player.id),
+          wins,
+          draws,
+          losses,
+          total: totalMatches,
+          winRate,
+          notLoseRate
+        };
+      });
+
+    return filtered.sort((a, b) => {
+      const multiplier = sortDirection === 'asc' ? 1 : -1;
+      switch (sortField) {
+        case 'points':
+          return (b.dynamicPoints - a.dynamicPoints) * multiplier;
+        case 'total':
+          return (b.total - a.total) * multiplier;
+        case 'wins':
+          return (b.wins - a.wins) * multiplier;
+        case 'draws':
+          return (b.draws - a.draws) * multiplier;
+        case 'losses':
+          return (b.losses - a.losses) * multiplier;
+        case 'winRate':
+          return (b.winRate - a.winRate) * multiplier;
+        case 'notLoseRate':
+          return (b.notLoseRate - a.notLoseRate) * multiplier;
+        default:
+          return 0;
+      }
+    });
+  };
+
   const getRankDecoration = (rank) => {
     switch(rank) {
       case 1:
@@ -174,7 +218,6 @@ const Rankings = () => {
     }
   };
 
-  // Get background color for top three rows
   const getRowHighlightClass = (rank) => {
     switch(rank) {
       case 1:
@@ -182,11 +225,30 @@ const Rankings = () => {
       case 2:
         return "bg-slate-50";
       case 3:
-        return "bg-amber-50";
+        return "bg-blue-50";
       default:
         return "";
     }
   };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (field !== sortField) return null;
+    return sortDirection === 'asc' ? 
+      <ArrowUp className="ml-1 h-4 w-4 inline" /> : 
+      <ArrowDown className="ml-1 h-4 w-4 inline" />;
+  };
+
+  const SortableHeader = ({ field, children }: { field: SortField, children: React.ReactNode }) => (
+    <TableHead 
+      className="cursor-pointer hover:bg-muted/50"
+      onClick={() => handleSort(field)}
+    >
+      <span className="inline-flex items-center">
+        {children}
+        <SortIcon field={field} />
+      </span>
+    </TableHead>
+  );
 
   return (
     <div className="space-y-4">
@@ -284,13 +346,13 @@ const Rankings = () => {
               <TableRow>
                 <TableHead>Rank</TableHead>
                 <TableHead>Player</TableHead>
-                <TableHead>Points</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Wins</TableHead>
-                <TableHead>Draws</TableHead>
-                <TableHead>Losses</TableHead>
-                <TableHead>Win %</TableHead>
-                <TableHead>Not Lose %</TableHead>
+                <SortableHeader field="points">Points</SortableHeader>
+                <SortableHeader field="total">Total</SortableHeader>
+                <SortableHeader field="wins">Wins</SortableHeader>
+                <SortableHeader field="draws">Draws</SortableHeader>
+                <SortableHeader field="losses">Losses</SortableHeader>
+                <SortableHeader field="winRate">Win %</SortableHeader>
+                <SortableHeader field="notLoseRate">Not Lose %</SortableHeader>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -300,20 +362,14 @@ const Rankings = () => {
                     Loading rankings...
                   </TableCell>
                 </TableRow>
-              ) : filteredPlayers.length === 0 ? (
+              ) : getSortedPlayers().length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-6 text-muted-foreground">
                     No players found.
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredPlayers.map((player, index) => {
-                  const wins = getPlayerWins(player.id);
-                  const draws = getPlayerDraws(player.id);
-                  const losses = getPlayerLosses(player.id);
-                  const totalMatches = wins + draws + losses;
-                  const winRate = totalMatches > 0 ? (wins / totalMatches) * 100 : 0;
-                  const notLoseRate = totalMatches > 0 ? ((wins + draws) / totalMatches) * 100 : 0;
+                getSortedPlayers().map((player, index) => {
                   const rank = index + 1;
                   
                   return (
@@ -321,12 +377,12 @@ const Rankings = () => {
                       <TableCell>{getRankDecoration(rank)}</TableCell>
                       <TableCell>{player.name}</TableCell>
                       <TableCell>{player.dynamicPoints}</TableCell>
-                      <TableCell>{totalMatches}</TableCell>
-                      <TableCell>{wins}</TableCell>
-                      <TableCell>{draws}</TableCell>
-                      <TableCell>{losses}</TableCell>
-                      <TableCell>{winRate.toFixed(1)}%</TableCell>
-                      <TableCell>{notLoseRate.toFixed(1)}%</TableCell>
+                      <TableCell>{player.total}</TableCell>
+                      <TableCell>{player.wins}</TableCell>
+                      <TableCell>{player.draws}</TableCell>
+                      <TableCell>{player.losses}</TableCell>
+                      <TableCell>{player.winRate.toFixed(1)}%</TableCell>
+                      <TableCell>{player.notLoseRate.toFixed(1)}%</TableCell>
                     </TableRow>
                   );
                 })
