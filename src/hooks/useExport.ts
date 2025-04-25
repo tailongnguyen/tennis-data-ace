@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from "react";
 import { Player, Match } from "@/types/player";
 import { useMatches } from "./useMatches";
@@ -8,6 +7,16 @@ import { usePlayers } from "./usePlayers";
 const BASE_FEE = 1500000;
 const BET_FEE = 30000;
 const SPECIAL_LOSS_FEE = 60000; // Fee for 6-0 losses
+const MAX_DAILY_FEE = 100000; // Maximum fee per player per day
+
+// Helper function to format currency
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('vi-VN', { 
+    style: 'currency', 
+    currency: 'VND',
+    maximumFractionDigits: 0
+  }).format(amount);
+};
 
 // Type for fee calculation
 export interface PlayerFee {
@@ -36,13 +45,39 @@ export const useExport = () => {
   const { matches, isLoading: matchesLoading, isDrawMatch } = useMatches();
   const { players, isLoading: playersLoading } = usePlayers();
 
-  // Helper function to format currency - MOVED BEFORE IT'S USED
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { 
-      style: 'currency', 
-      currency: 'VND',
-      maximumFractionDigits: 0
-    }).format(amount);
+  // Helper function to calculate daily fee
+  const calculateDailyFee = (matches: Match[], playerId: string): number => {
+    // Group matches by date
+    const dailyFees = matches.reduce((acc: { [key: string]: number }, match) => {
+      const date = new Date(match.match_date).toDateString();
+      
+      if (!acc[date]) {
+        acc[date] = 0;
+      }
+
+      if (match.loser1_id === playerId || match.loser2_id === playerId) {
+        // Add fee based on match result
+        if (match.score === "6-0") {
+          acc[date] += SPECIAL_LOSS_FEE;
+        } else if (!isDrawMatch(match.score)) {
+          acc[date] += BET_FEE;
+        }
+      }
+
+      if (isDrawMatch(match.score) && 
+         (match.winner1_id === playerId || match.winner2_id === player.id || 
+          match.loser1_id === playerId || match.loser2_id === player.id)) {
+        acc[date] += BET_FEE;
+      }
+
+      // Cap the daily fee at MAX_DAILY_FEE
+      acc[date] = Math.min(acc[date], MAX_DAILY_FEE);
+
+      return acc;
+    }, {});
+
+    // Sum up all daily fees
+    return Object.values(dailyFees).reduce((sum, fee) => sum + fee, 0);
   };
 
   // Filter matches based on date range and match type
@@ -99,21 +134,14 @@ export const useExport = () => {
         isDrawMatch(match.score)
       ).length;
       
-      // Calculate losses and special losses (6-0)
       const lossMatches = playerMatches.filter(match => 
         !isDrawMatch(match.score) && (match.loser1_id === player.id || match.loser2_id === player.id)
       );
       
       const losses = lossMatches.length;
       
-      // Count special losses (6-0)
-      const specialLosses = lossMatches.filter(match => match.score === "6-0").length;
-      
-      // Calculate bet fee: 30,000 VND for each regular loss and draw, 60,000 VND for each 6-0 loss
-      const regularLossFee = (losses - specialLosses) * BET_FEE;
-      const specialLossFee = specialLosses * SPECIAL_LOSS_FEE;
-      const drawFee = draws * BET_FEE;
-      const betFee = regularLossFee + specialLossFee + drawFee;
+      // Calculate total bet fee with daily caps
+      const betFee = calculateDailyFee(playerMatches, player.id);
       
       // Base fee is 1,500,000 VND if player is active, 0 otherwise
       const baseFee = player.is_active ? BASE_FEE : 0;
@@ -131,8 +159,8 @@ export const useExport = () => {
         totalFee
       };
     })
-    .filter(fee => fee.betFee > 0) // Remove players with no bet fee
-    .sort((a, b) => b.totalFee - a.totalFee); // Sort by total fee descending
+    .filter(fee => fee.betFee > 0)
+    .sort((a, b) => b.totalFee - a.totalFee);
 
     return playerFees.map(fee => ({
       'Player Name': fee.name,
