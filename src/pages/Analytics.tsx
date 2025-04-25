@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -214,18 +213,15 @@ const Analytics = () => {
     selectedPlayer === "all" || player.id !== selectedPlayer
   );
   
-  // Helper function to check if players are opponents in a match
   const playersAreOpponents = (player1Id: string, player2Id: string, match: any) => {
     const player1IsWinner = match.winner1_id === player1Id || match.winner2_id === player1Id;
     const player1IsLoser = match.loser1_id === player1Id || match.loser2_id === player1Id;
     const player2IsWinner = match.winner1_id === player2Id || match.winner2_id === player2Id;
     const player2IsLoser = match.loser1_id === player2Id || match.loser2_id === player2Id;
     
-    // Players are opponents if one is on the winning side and one is on the losing side
     return (player1IsWinner && player2IsLoser) || (player1IsLoser && player2IsWinner);
   };
   
-  // Helper function to check if players are partners in a match
   const playersArePartners = (player1Id: string, player2Id: string, match: any) => {
     const bothWinners = 
       (match.winner1_id === player1Id && match.winner2_id === player2Id) || 
@@ -238,7 +234,6 @@ const Analytics = () => {
     return bothWinners || bothLosers;
   };
   
-  // Helper function to check if two players participated in a match
   const playersParticipatedInMatch = (player1Id: string, player2Id: string, match: any) => {
     const player1InMatch = 
       match.winner1_id === player1Id || 
@@ -255,7 +250,6 @@ const Analytics = () => {
     return player1InMatch && player2InMatch && !playersArePartners(player1Id, player2Id, match);
   };
   
-  // Helper function to check if a player won against another player in a match
   const playerWonAgainstPlayer = (player1Id: string, player2Id: string, match: any) => {
     if (!playersAreOpponents(player1Id, player2Id, match)) {
       return false;
@@ -266,7 +260,7 @@ const Analytics = () => {
   };
   
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-[1400px] mx-auto">
       <h1 className="text-3xl font-bold">Performance Analytics</h1>
       
       <div className="flex justify-between items-center mb-4">
@@ -440,8 +434,8 @@ const Analytics = () => {
         </TabsContent>
         <TabsContent value="headtohead" className="space-y-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-3">
+              <div className="space-y-2">
                 <CardTitle>Head-to-Head Records</CardTitle>
                 <CardDescription>Direct match-up statistics between players.</CardDescription>
               </div>
@@ -459,89 +453,78 @@ const Analytics = () => {
                 </SelectContent>
               </Select>
             </CardHeader>
-            <CardContent className="h-[300px]">
-              {hasData ? (
-                <div className="h-full overflow-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Player
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full table-fixed divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Player
+                      </th>
+                      {headToHeadColumnPlayers.map(player => (
+                        <th key={player.id} scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {player.name}
                         </th>
-                        {headToHeadColumnPlayers.map(player => (
-                          <th key={player.id} scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {player.name}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {headToHeadRowPlayers.map(player1 => (
-                        <tr key={player1.id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {player1.name}
-                          </td>
-                          {headToHeadColumnPlayers.map(player2 => {
-                            if (player1.id === player2.id) {
-                              return (
-                                <td key={player2.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  -
-                                </td>
-                              );
-                            }
-                            
-                            // Filter matches involving both players but ensure they're not partners
-                            const relevantMatches = filteredMatches.filter(match => {
-                              if (headToHeadType !== 'all' && match.match_type !== headToHeadType) {
-                                return false;
-                              }
-                              
-                              // Only include matches where players are opponents (not partners)
-                              return playersParticipatedInMatch(player1.id, player2.id, match);
-                            });
-                            
-                            // Count wins for player1 against player2
-                            const matchesWon = relevantMatches.filter(match => 
-                              !isDrawMatch(match.score) && playerWonAgainstPlayer(player1.id, player2.id, match)
-                            ).length;
-                            
-                            // Count losses for player1 against player2
-                            const matchesLost = relevantMatches.filter(match => 
-                              !isDrawMatch(match.score) && playerWonAgainstPlayer(player2.id, player1.id, match)
-                            ).length;
-                            
-                            // Count draws between player1 and player2 (only when they're opponents)
-                            const matchesDrawn = relevantMatches.filter(match => 
-                              isDrawMatch(match.score) && playersAreOpponents(player1.id, player2.id, match)
-                            ).length;
-                            
-                            const score = `${matchesWon}-${matchesDrawn}-${matchesLost}`;
-                            const isWinning = matchesWon > matchesLost;
-                            const isLosing = matchesWon < matchesLost;
-                            
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {headToHeadRowPlayers.map(player1 => (
+                      <tr key={player1.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {player1.name}
+                        </td>
+                        {headToHeadColumnPlayers.map(player2 => {
+                          if (player1.id === player2.id) {
                             return (
-                              <td key={player2.id} className={cn(
-                                "px-6 py-4 whitespace-nowrap text-sm",
-                                {
-                                  "text-green-600 font-medium": isWinning,
-                                  "text-red-600 font-medium": isLosing,
-                                  "text-gray-500": !isWinning && !isLosing
-                                }
-                              )}>
-                                {matchesWon + matchesDrawn + matchesLost > 0 ? score : '-'}
+                              <td key={player2.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                -
                               </td>
                             );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-muted-foreground">No head-to-head data available.</p>
-                </div>
-              )}
+                          }
+                          
+                          const relevantMatches = filteredMatches.filter(match => {
+                            if (headToHeadType !== 'all' && match.match_type !== headToHeadType) {
+                              return false;
+                            }
+                            
+                            return playersParticipatedInMatch(player1.id, player2.id, match);
+                          });
+                          
+                          const matchesWon = relevantMatches.filter(match => 
+                            !isDrawMatch(match.score) && playerWonAgainstPlayer(player1.id, player2.id, match)
+                          ).length;
+                          
+                          const matchesLost = relevantMatches.filter(match => 
+                            !isDrawMatch(match.score) && playerWonAgainstPlayer(player2.id, player1.id, match)
+                          ).length;
+                          
+                          const matchesDrawn = relevantMatches.filter(match => 
+                            isDrawMatch(match.score) && playersAreOpponents(player1.id, player2.id, match)
+                          ).length;
+                          
+                          const score = `${matchesWon}-${matchesDrawn}-${matchesLost}`;
+                          const isWinning = matchesWon > matchesLost;
+                          const isLosing = matchesWon < matchesLost;
+                          
+                          return (
+                            <td key={player2.id} className={cn(
+                              "px-6 py-4 whitespace-nowrap text-sm",
+                              {
+                                "text-green-600 font-medium": isWinning,
+                                "text-red-600 font-medium": isLosing,
+                                "text-gray-500": !isWinning && !isLosing
+                              }
+                            )}>
+                              {matchesWon + matchesDrawn + matchesLost > 0 ? score : '-'}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
