@@ -7,8 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { FileDown, FileSpreadsheet, FileText, Calendar } from "lucide-react";
 import { useExport } from "@/hooks/useExport";
-import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const Export = () => {
   const { 
@@ -84,18 +87,59 @@ const Export = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="time-range">Time Range (Months)</Label>
-                  <div className="flex items-center space-x-2">
-                    <Input
-                      id="time-range"
-                      type="number"
-                      min="1"
-                      max="60"
-                      value={range.months}
-                      onChange={(e) => setRange({ months: parseInt(e.target.value) || 1 })}
-                      className="max-w-[120px]"
-                    />
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <Label>Date Range</Label>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                    {/* Start Date Picker */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full sm:w-[180px] justify-start text-left font-normal",
+                            !range.startDate && "text-muted-foreground"
+                          )}
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {range.startDate ? format(range.startDate, "yyyy-MM-dd") : <span>Start date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={range.startDate}
+                          onSelect={(date) => date && setRange({ ...range, startDate: date })}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <span className="hidden sm:block">to</span>
+                    
+                    {/* End Date Picker */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full sm:w-[180px] justify-start text-left font-normal",
+                            !range.endDate && "text-muted-foreground"
+                          )}
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {range.endDate ? format(range.endDate, "yyyy-MM-dd") : <span>End date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={range.endDate}
+                          onSelect={(date) => date && setRange({ ...range, endDate: date })}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
 

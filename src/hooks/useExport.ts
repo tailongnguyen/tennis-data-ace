@@ -21,11 +21,15 @@ export interface PlayerFee {
 }
 
 export interface ExportRange {
-  months: number;
+  startDate: Date;
+  endDate: Date;
 }
 
 export const useExport = () => {
-  const [range, setRange] = useState<ExportRange>({ months: 3 });
+  const [range, setRange] = useState<ExportRange>({ 
+    startDate: new Date(new Date().setMonth(new Date().getMonth() - 3)), // Default to 3 months ago
+    endDate: new Date() 
+  });
   const [matchType, setMatchType] = useState<'all' | 'singles' | 'doubles'>('all');
   
   const { matches, isLoading: matchesLoading, isDrawMatch } = useMatches();
@@ -35,16 +39,14 @@ export const useExport = () => {
   const filteredMatches = useMemo(() => {
     if (!matches) return [];
 
-    const now = new Date();
-    const startDate = new Date();
-    startDate.setMonth(now.getMonth() - range.months);
-
     return matches.filter(match => {
       const matchDate = new Date(match.match_date);
       const matchTypeFilter = matchType === 'all' || match.match_type === matchType;
-      return matchDate >= startDate && matchTypeFilter;
+      return matchDate >= range.startDate && 
+             matchDate <= range.endDate && 
+             matchTypeFilter;
     });
-  }, [matches, range.months, matchType]);
+  }, [matches, range.startDate, range.endDate, matchType]);
 
   // Generate export data for matches
   const matchExportData = useMemo(() => {
