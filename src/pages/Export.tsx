@@ -32,14 +32,6 @@ const Export = () => {
     handleExport(activeTab, exportFormat);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { 
-      style: 'currency', 
-      currency: 'VND',
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
   return (
     <div className="space-y-4">
       <h1 className="text-3xl font-bold">Export Data</h1>
@@ -170,8 +162,8 @@ const Export = () => {
                       <TableRow>
                         <TableHead>Time</TableHead>
                         <TableHead>Type</TableHead>
-                        <TableHead>Winner</TableHead>
-                        <TableHead>Loser</TableHead>
+                        <TableHead>Team 1</TableHead>
+                        <TableHead>Team 2</TableHead>
                         <TableHead>Score</TableHead>
                       </TableRow>
                     ) : (
@@ -204,11 +196,11 @@ const Export = () => {
                       ) : (
                         matchExportData.slice(0, 5).map((match, idx) => (
                           <TableRow key={idx}>
-                            <TableCell>{match.time}</TableCell>
-                            <TableCell>{match.type}</TableCell>
-                            <TableCell>{match.winner}</TableCell>
-                            <TableCell>{match.loser}</TableCell>
-                            <TableCell>{match.score}</TableCell>
+                            <TableCell>{match['Time']}</TableCell>
+                            <TableCell>{match['Type']}</TableCell>
+                            <TableCell>{match['Team 1']}</TableCell>
+                            <TableCell>{match['Team 2']}</TableCell>
+                            <TableCell>{match['Score']}</TableCell>
                           </TableRow>
                         ))
                       )
@@ -221,14 +213,14 @@ const Export = () => {
                     ) : (
                       feeExportData.slice(0, 5).map((fee, idx) => (
                         <TableRow key={idx}>
-                          <TableCell>{fee.name}</TableCell>
-                          <TableCell>{fee.totalMatches}</TableCell>
-                          <TableCell>{fee.wins}</TableCell>
-                          <TableCell>{fee.draws}</TableCell>
-                          <TableCell>{fee.losses}</TableCell>
-                          <TableCell>{formatCurrency(fee.baseFee)}</TableCell>
-                          <TableCell>{formatCurrency(fee.betFee)}</TableCell>
-                          <TableCell>{formatCurrency(fee.totalFee)}</TableCell>
+                          <TableCell>{fee['Player Name']}</TableCell>
+                          <TableCell>{fee['Total Matches']}</TableCell>
+                          <TableCell>{fee['Total Wins']}</TableCell>
+                          <TableCell>{fee['Total Draws']}</TableCell>
+                          <TableCell>{fee['Total Losses']}</TableCell>
+                          <TableCell>{fee['Base Fee']}</TableCell>
+                          <TableCell>{fee['Bet Fee']}</TableCell>
+                          <TableCell>{fee['Total Fee']}</TableCell>
                         </TableRow>
                       ))
                     )}
