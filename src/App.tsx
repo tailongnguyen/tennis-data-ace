@@ -12,7 +12,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Players from "./pages/Players";
 import Matches from "./pages/Matches";
-import Rankings from "./pages/Rankings";
+import RankingsWrapper from "./pages/RankingsWrapper";
 import Analytics from "./pages/Analytics";
 import Export from "./pages/Export";
 import NotFound from "./pages/NotFound";
@@ -41,7 +41,7 @@ const App = () => (
                     <Route path="/register" element={<Register />} />
                     <Route path="/players" element={<Players />} />
                     <Route path="/matches" element={<Matches />} />
-                    <Route path="/rankings" element={<Rankings />} />
+                    <Route path="/rankings" element={<RankingsWrapper />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/export" element={<Export />} />
                     <Route path="*" element={<NotFound />} />

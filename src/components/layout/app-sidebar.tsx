@@ -28,7 +28,7 @@ import {
 
 export const AppSidebar = () => {
   const navigate = useNavigate();
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const { user, signOut } = useAuth();
   const collapsed = state === "collapsed";
 
@@ -89,7 +89,18 @@ export const AppSidebar = () => {
                     <Button
                       variant="ghost"
                       className="w-full justify-start"
-                      onClick={() => navigate(item.path)}
+                      onClick={() => {
+                        // For mobile: first close sidebar, then navigate after a small delay
+                        // This prevents focusing/scroll issues when components unmount
+                        if (isMobile) {
+                          setOpenMobile(false);
+                          // Use a small timeout to ensure the sidebar animation starts before navigation
+                          setTimeout(() => navigate(item.path), 50);
+                        } else {
+                          // For desktop, navigate immediately
+                          navigate(item.path);
+                        }
+                      }}
                     >
                       <item.icon className="mr-2 h-5 w-5" />
                       <span>{item.title}</span>

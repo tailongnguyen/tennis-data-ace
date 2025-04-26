@@ -2,13 +2,13 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-  Dialog,
+  SafeDialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/ui/safe-dialog";
 import {
   Form,
   FormControl,
@@ -176,7 +176,7 @@ export function RecordMatchDialog() {
     `${player3Name} / ${player4Name}`;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <SafeDialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
@@ -444,6 +444,6 @@ export function RecordMatchDialog() {
           </form>
         </Form>
       </DialogContent>
-    </Dialog>
+    </SafeDialog>
   );
 }

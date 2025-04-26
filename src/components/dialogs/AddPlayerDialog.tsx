@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { SafeDialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/safe-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,7 @@ export function AddPlayerDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <SafeDialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
@@ -126,6 +126,6 @@ export function AddPlayerDialog() {
           </form>
         </Form>
       </DialogContent>
-    </Dialog>
+    </SafeDialog>
   );
 }
