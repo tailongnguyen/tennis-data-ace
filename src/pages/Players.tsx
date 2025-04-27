@@ -1,3 +1,4 @@
+
 import { AddPlayerDialog } from "@/components/dialogs/AddPlayerDialog";
 import { EditPlayerDialog } from "@/components/dialogs/EditPlayerDialog";
 import { Input } from "@/components/ui/input";
@@ -51,20 +52,19 @@ const Players = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>Age</TableHead>
                 <TableHead>Playing Style</TableHead>
-                <TableHead>Ranking Points</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6">
+                  <TableCell colSpan={4} className="text-center py-6">
                     Loading players...
                   </TableCell>
                 </TableRow>
               ) : players.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
                     No players added yet. Add your first player to get started.
                   </TableCell>
                 </TableRow>
@@ -74,7 +74,6 @@ const Players = () => {
                     <TableCell>{player.name}</TableCell>
                     <TableCell>{player.age}</TableCell>
                     <TableCell>{player.playing_style}</TableCell>
-                    <TableCell>{player.ranking_points}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <EditPlayerDialog player={player} />

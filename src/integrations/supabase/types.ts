@@ -85,7 +85,6 @@ export type Database = {
           is_active: boolean
           name: string
           playing_style: string
-          ranking_points: number | null
           user_id: string
         }
         Insert: {
@@ -95,7 +94,6 @@ export type Database = {
           is_active?: boolean
           name: string
           playing_style?: string
-          ranking_points?: number | null
           user_id: string
         }
         Update: {
@@ -105,7 +103,6 @@ export type Database = {
           is_active?: boolean
           name?: string
           playing_style?: string
-          ranking_points?: number | null
           user_id?: string
         }
         Relationships: []

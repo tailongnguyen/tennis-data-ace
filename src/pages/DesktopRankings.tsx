@@ -43,7 +43,6 @@ const DesktopRankings = () => {
 
   const isLoading = playersLoading || matchesLoading;
 
-  // Memoize filtered matches to avoid recalculation on every render
   const filteredMatches = useMemo(() => {
     const now = new Date();
     let startDate: Date;
@@ -96,24 +95,6 @@ const DesktopRankings = () => {
     ).length;
   }, [getPlayerMatches, isDrawMatch]);
 
-  const calculateWinRate = useCallback((playerId) => {
-    const totalMatches = getPlayerMatches(playerId).length;
-    if (totalMatches === 0) return 0;
-    
-    const wins = getPlayerWins(playerId);
-    return (wins / totalMatches) * 100;
-  }, [getPlayerMatches, getPlayerWins]);
-
-  const calculateNotLoseRate = useCallback((playerId) => {
-    const totalMatches = getPlayerMatches(playerId).length;
-    if (totalMatches === 0) return 0;
-    
-    const wins = getPlayerWins(playerId);
-    const draws = getPlayerDraws(playerId);
-    
-    return ((wins + draws) / totalMatches) * 100;
-  }, [getPlayerMatches, getPlayerWins, getPlayerDraws]);
-
   const calculatePlayerPoints = useCallback((playerId) => {
     let points = 0;
     
@@ -138,7 +119,6 @@ const DesktopRankings = () => {
 
   const handleSort = useCallback((field: SortField) => {
     if (field === sortField) {
-      // Fix the issue where toggling always defaulted to 'asc'
       setSortDirection(sortDirection === 'desc' ? 'asc' : 'desc');
     } else {
       setSortField(field);
@@ -146,9 +126,7 @@ const DesktopRankings = () => {
     }
   }, [sortField, sortDirection]);
 
-  // Memoize the entire player calculation and sorting process to prevent recalculation on every render
   const sortedPlayers = useMemo(() => {
-    // First filter players by search query
     const filtered = players
       .filter(player => 
         player.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -173,7 +151,6 @@ const DesktopRankings = () => {
         };
       });
 
-    // Then sort the filtered players
     return filtered.sort((a, b) => {
       const multiplier = sortDirection === 'desc' ? 1 : -1;
       switch (sortField) {
