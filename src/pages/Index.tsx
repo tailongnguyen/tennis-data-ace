@@ -17,11 +17,19 @@ const Index = () => {
   // Get total number of matches
   const totalMatches = matches.length;
 
-  // Get top ranked player
+  // Get top ranked player based on most recent matches
   const topPlayer = players.length > 0 
-    ? players.reduce((prev, current) => 
-        (current.ranking_points ?? 0) > (prev.ranking_points ?? 0) ? current : prev
-      )
+    ? players.reduce((prev, current) => {
+        const prevMatches = matches.filter(match => 
+          match.winner1_id === prev.id || match.winner2_id === prev.id
+        ).length;
+        
+        const currentMatches = matches.filter(match => 
+          match.winner1_id === current.id || match.winner2_id === current.id
+        ).length;
+        
+        return currentMatches > prevMatches ? current : prev;
+      })
     : null;
 
   // Get recent matches
@@ -65,7 +73,7 @@ const Index = () => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Top Ranked</CardTitle>
+            <CardTitle className="text-sm font-medium">Top Player</CardTitle>
             <TrophyIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -74,8 +82,8 @@ const Index = () => {
             </div>
             <p className="text-xs text-muted-foreground">
               {topPlayer 
-                ? `${topPlayer.ranking_points} points` 
-                : "No rankings yet"}
+                ? `${matches.filter(m => m.winner1_id === topPlayer.id || m.winner2_id === topPlayer.id).length} wins` 
+                : "No matches yet"}
             </p>
           </CardContent>
         </Card>
