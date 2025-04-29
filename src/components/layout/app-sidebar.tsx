@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,10 +34,29 @@ export const AppSidebar = () => {
   const collapsed = state === "collapsed";
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate("/login");
+    if (isMobile) {
+      setOpenMobile(false);
+      // Use a small timeout to ensure the sidebar animation starts before navigation
+      setTimeout(async () => {
+        await signOut();
+        navigate("/login");
+      }, 50);
+    } else {
+      await signOut();
+      navigate("/login");
+    }
   };
   
+  const handleLogin = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+      // Use a small timeout to ensure the sidebar animation starts before navigation
+      setTimeout(() => navigate("/login"), 50);
+    } else {
+      navigate("/login");
+    }
+  };
+
   const navItems = [
     {
       title: "Dashboard",
@@ -127,7 +147,7 @@ export const AppSidebar = () => {
             <Button
               variant="ghost"
               className="w-full justify-start"
-              onClick={() => navigate("/login")}
+              onClick={handleLogin}
             >
               <LogIn className="mr-2 h-5 w-5" />
               <span>Sign In</span>
