@@ -17,6 +17,7 @@ import Analytics from "./pages/Analytics";
 import Export from "./pages/Export";
 import NotFound from "./pages/NotFound";
 
+// Create a new query client instance
 const queryClient = new QueryClient();
 
 const App = () => (

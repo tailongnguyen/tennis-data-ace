@@ -15,13 +15,19 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
+// Define public routes that don't require authentication
+const PUBLIC_ROUTES = ['/login', '/register'];
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  
+  // Check if the current route is a public route
+  const isPublicRoute = PUBLIC_ROUTES.includes(location.pathname);
 
   useEffect(() => {
     // Set up auth state listener
@@ -45,22 +51,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // Check current session without auto-redirecting
+    // Check current session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+      setLoading(false);
       
-      // Only redirect unauthenticated users if they're trying to access protected routes
-      if (!currentSession && !isInitialized && 
-          !['/', '/login', '/register'].includes(location.pathname)) {
-        navigate('/login');
+      // Redirect unauthenticated users trying to access protected routes
+      if (!currentSession && !isPublicRoute) {
+        navigate('/login', { replace: true });
       }
-      
-      setIsInitialized(true);
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, session, isInitialized, location.pathname]);
+  }, [navigate, session, isPublicRoute, location.pathname]);
+
+  // Protect routes whenever location changes
+  useEffect(() => {
+    if (!loading && !user && !isPublicRoute) {
+      navigate('/login', { replace: true });
+    }
+  }, [user, loading, isPublicRoute, navigate, location.pathname]);
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
