@@ -11,6 +11,7 @@ export interface CreateMatchData {
   loser2_id: string | null;
   match_type: 'singles' | 'doubles';
   score: string;
+  match_date?: string;
 }
 
 export const useMatches = () => {
@@ -106,7 +107,7 @@ export const useMatches = () => {
       const dataToInsert = {
         ...matchData,
         user_id: user.id,
-        match_date: new Date().toISOString(),
+        match_date: matchData.match_date || new Date().toISOString(),
       };
 
       console.log("Attempting to insert match data:", dataToInsert);
@@ -137,10 +138,78 @@ export const useMatches = () => {
     },
   });
 
+    const deleteMatch = useMutation({
+    mutationFn: async (matchId: string) => {
+      console.log("Starting match deletion for ID:", matchId);
+      
+      if (!user) {
+        console.error("User not logged in");
+        throw new Error("User must be logged in to delete matches");
+      }
+
+      const { error } = await supabase
+        .from("matches")
+        .delete()
+        .eq('id', matchId);
+
+      if (error) {
+        console.error("Error deleting match:", error);
+        throw error;
+      }
+
+      console.log("Match deleted successfully");
+      return { id: matchId };
+    },
+    onSuccess: () => {
+      console.log("Match deleted successfully - invalidating queries...");
+      queryClient.invalidateQueries({ queryKey: ["matches"] });
+      toast.success("Match deleted successfully");
+    },
+    onError: (error) => {
+      console.error("Failed to delete match:", error);
+      toast.error("Failed to delete match: " + (error instanceof Error ? error.message : "Unknown error"));
+    },
+  });
+
+  const updateMatch = useMutation({
+    mutationFn: async ({ matchId, matchData }: { matchId: string, matchData: Partial<CreateMatchData> }) => {
+      console.log("Starting match update for ID:", matchId, "with data:", matchData);
+      
+      if (!user) {
+        console.error("User not logged in");
+        throw new Error("User must be logged in to update matches");
+      }
+
+      const { error } = await supabase
+        .from("matches")
+        .update(matchData)
+        .eq('id', matchId);
+
+      if (error) {
+        console.error("Error updating match:", error);
+        throw error;
+      }
+
+      console.log("Match updated successfully");
+      return { id: matchId };
+    },
+    onSuccess: () => {
+      console.log("Match updated successfully - invalidating queries...");
+      queryClient.invalidateQueries({ queryKey: ["matches"] });
+      toast.success("Match updated successfully");
+    },
+    onError: (error) => {
+      console.error("Failed to update match:", error);
+      toast.error("Failed to update match: " + (error instanceof Error ? error.message : "Unknown error"));
+    },
+  });
+
   return {
     matches,
     isLoading,
     addMatch,
+    deleteMatch,
+    updateMatch,
     isDrawMatch,
     getPlayerMatches,
     getPlayerWins,

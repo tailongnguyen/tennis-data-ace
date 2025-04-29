@@ -4,6 +4,19 @@
 
 **URL**: https://lovable.dev/projects/d8f00b9e-4ba9-47d3-a53f-c9430e309557
 
+## AI Match Recording Feature
+
+This application includes an AI-powered feature that uses Google Gemini to parse natural language descriptions of tennis matches. To use this feature:
+
+1. Get a Google Gemini API key by visiting [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Create a `.env.local` file in the root directory with the following content:
+   ```
+   GEMINI_API_KEY=your_api_key_here
+   ```
+3. Restart the application
+
+You can then use the "Record Match with AI" button on the Matches page to input match descriptions in natural language.
+
 ## How can I edit this code?
 
 There are several ways of editing your application.

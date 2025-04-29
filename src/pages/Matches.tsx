@@ -1,16 +1,34 @@
 import { RecordMatchDialog } from "@/components/dialogs/RecordMatchDialog";
+import { RecordMatchWithAIDialog } from "@/components/dialogs/RecordMatchWithAIDialog";
+import { EditMatchDialog } from "@/components/dialogs/EditMatchDialog";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search } from "lucide-react";
+import { Search, Pencil, Trash2, AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { useMatches } from "@/hooks/useMatches";
 import { format } from "date-fns";
 import { Match } from "@/types/player";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 const Matches = () => {
-  const { matches, isLoading } = useMatches();
+  const { matches, isLoading, deleteMatch } = useMatches();
+  const [matchToDelete, setMatchToDelete] = useState<string | null>(null);
+  const [matchToEdit, setMatchToEdit] = useState<Match | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [filterType, setFilterType] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -50,7 +68,10 @@ const Matches = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Matches</h1>
-        <RecordMatchDialog />
+        <div className="flex space-x-2">
+          <RecordMatchWithAIDialog />
+          <RecordMatchDialog />
+        </div>
       </div>
       
       <Card>
@@ -92,6 +113,7 @@ const Matches = () => {
                 <TableHead>Team 1</TableHead>
                 <TableHead>Team 2</TableHead>
                 <TableHead>Score</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -120,6 +142,62 @@ const Matches = () => {
                       <TableCell>{winners}</TableCell>
                       <TableCell>{losers}</TableCell>
                       <TableCell>{match.score}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setMatchToEdit(match);
+                              setEditDialogOpen(true);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog open={matchToDelete === match.id} onOpenChange={(open) => {
+                            if (!open) setMatchToDelete(null);
+                          }}>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setMatchToDelete(match.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Match Record</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this match record? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => {
+                                    if (matchToDelete) {
+                                      deleteMatch.mutate(matchToDelete, {
+                                        onSuccess: () => {
+                                          toast.success("Match deleted successfully");
+                                          setMatchToDelete(null);
+                                        },
+                                        onError: (error) => {
+                                          toast.error("Failed to delete match");
+                                          console.error("Error deleting match:", error);
+                                        }
+                                      });
+                                    }
+                                  }}
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   );
                 })
@@ -128,6 +206,13 @@ const Matches = () => {
           </Table>
         </CardContent>
       </Card>
+      
+      {/* Edit Match Dialog */}
+      <EditMatchDialog 
+        match={matchToEdit}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+      />
     </div>
   );
 };
