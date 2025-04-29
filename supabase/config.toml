@@ -1,1 +1,4 @@
-project_id = "mhymvqbjthkjmfwrlmtn"
+
+project_id = "YOUR_SUPABASE_PROJECT_ID"
+[functions.process-match-text]
+verify_jwt = true

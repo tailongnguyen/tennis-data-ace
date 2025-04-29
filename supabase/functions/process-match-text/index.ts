@@ -1,16 +1,30 @@
-import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.1.3";
 
 // Initialize the Gemini API
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const genAI = new GoogleGenerativeAI(Deno.env.get('GEMINI_API_KEY') || '');
 
-export async function POST(request: Request) {
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   try {
     // Parse the request body
-    const { text, playerList } = await request.json();
+    const { text, playerList } = await req.json();
 
     if (!text) {
-      return NextResponse.json({ error: 'Text is required' }, { status: 400 });
+      return new Response(
+        JSON.stringify({ error: 'Text is required' }), 
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Format player list for the prompt
@@ -71,19 +85,28 @@ export async function POST(request: Request) {
     try {
       const matches = JSON.parse(jsonStr);
       
-      // Process dates to ensure they are Date objects
+      // Process dates to ensure they are valid
       const processedMatches = matches.map((match: any) => ({
         ...match,
-        matchDate: new Date(match.matchDate)
+        matchDate: match.matchDate ? new Date(match.matchDate).toISOString() : new Date().toISOString()
       }));
 
-      return NextResponse.json({ matches: processedMatches });
+      return new Response(
+        JSON.stringify({ matches: processedMatches }), 
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     } catch (jsonError) {
       console.error('Failed to parse JSON from Gemini response:', jsonError);
-      return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
+      return new Response(
+        JSON.stringify({ error: 'Failed to parse AI response' }), 
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
   } catch (error) {
     console.error('Error processing match text:', error);
-    return NextResponse.json({ error: 'Failed to process match text' }, { status: 500 });
+    return new Response(
+      JSON.stringify({ error: 'Failed to process match text' }), 
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
-}
+});
