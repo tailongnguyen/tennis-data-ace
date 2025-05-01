@@ -6,6 +6,7 @@ import {
   BarChart, 
   LineChart, 
   PieChart, 
+  AreaChart,
   ResponsiveContainer, 
   Bar, 
   XAxis, 
@@ -15,11 +16,12 @@ import {
   Legend, 
   Line,
   Pie,
-  Cell
+  Cell,
+  Area
 } from "recharts";
 import { useMatches } from "@/hooks/useMatches";
 import { usePlayers } from "@/hooks/usePlayers";
-import { format, subDays, parseISO, isWithinInterval, isAfter } from "date-fns";
+import { format, subDays, parseISO, isWithinInterval, isAfter, addWeeks, startOfWeek, endOfWeek, isSameWeek, differenceInWeeks } from "date-fns";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { Activity, BarChart3, PieChartIcon, Search } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -28,7 +30,8 @@ import { cn } from "@/lib/utils";
 import { TableScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
-const COLORS = ['#8B5CF6', '#D946EF', '#F97316', '#0EA5E9', '#10B981', '#EAB308'];
+// More visually friendly colors with better contrast for charts
+const COLORS = ['#4299E1', '#F6AD55', '#68D391', '#F687B3', '#B794F4', '#E9D8FD'];
 
 const Analytics = () => {
   type H2hSortField = "total" | "wins" | "draws" | "losses" | "winRate" | "notLoseRate";
@@ -84,6 +87,9 @@ const Analytics = () => {
       );
     });
   }, [matches, selectedPlayer, timePeriod]);
+  
+  // Define a variable to check if we have match data to display
+  const hasMatchData = filteredMatches.length > 0;
 
   // --- Head-to-Head sorted/search table data ---
   const sortedH2hOpponents = useMemo(() => {
@@ -271,6 +277,147 @@ const Analytics = () => {
       notLoseRate: month.total === 0 ? 0 : Math.round(((month.wins + month.draws) / month.total) * 100)
     }));
   }, [filteredMatches, selectedPlayer, isDrawMatch]);
+  
+  // Weekly accumulated points data for the area chart
+  const weeklyPointsData = useMemo(() => {
+    // If no date range selected or no data available, return empty array
+    if (!hasMatchData) return [];
+    
+    // Determine start and end date for the analysis
+    const startDate = getDateRange();
+    const endDate = new Date();
+    
+    // Calculate how many weeks to show
+    const weekCount = Math.max(1, Math.ceil(differenceInWeeks(endDate, startDate)));
+    
+    // Create initial weekly buckets (max 20 weeks to avoid overcrowding)
+    const displayWeeks = Math.min(weekCount, 20);
+    const weekBuckets = Array.from({ length: displayWeeks }, (_, i) => {
+      const weekStart = startOfWeek(addWeeks(startDate, i));
+      return {
+        name: format(weekStart, 'MMM d'),
+        weekStart,
+        weekEnd: endOfWeek(weekStart),
+        total: 0,
+        playerPoints: {}
+      };
+    });
+    
+    // Initialize player data if a specific player is selected
+    let relevantPlayers = [];
+    if (selectedPlayer === "all") {
+      // Get the top 5 most active players
+      const playerMatches = {};
+      filteredMatches.forEach(match => {
+        const playerIds = [match.winner1_id, match.loser1_id];
+        if (match.winner2_id) playerIds.push(match.winner2_id);
+        if (match.loser2_id) playerIds.push(match.loser2_id);
+        
+        playerIds.forEach(id => {
+          if (!id) return;
+          playerMatches[id] = (playerMatches[id] || 0) + 1;
+        });
+      });
+      
+      // Get the top 5 most active players
+      relevantPlayers = Object.entries(playerMatches)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([id]) => id);
+    } else {
+      relevantPlayers = [selectedPlayer];
+    }
+    
+    // Initialize player points for each week
+    const playerMap = {};
+    relevantPlayers.forEach(playerId => {
+      const player = players.find(p => p.id === playerId);
+      if (player) {
+        playerMap[playerId] = player.name;
+        weekBuckets.forEach(week => {
+          week.playerPoints[playerId] = 0;
+          week[player.name] = 0; // For direct access in the chart
+        });
+      }
+    });
+
+    // Sort matches by date, oldest first
+    const sortedMatches = [...filteredMatches].sort((a, b) => 
+      new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
+    );
+
+    // Process matches to accumulate points by player and week
+    sortedMatches.forEach(match => {
+      const matchDate = new Date(match.match_date);
+      const weekIndex = weekBuckets.findIndex(week => 
+        matchDate >= week.weekStart && matchDate <= week.weekEnd
+      );
+      
+      if (weekIndex >= 0) {
+        const week = weekBuckets[weekIndex];
+        const isDraw = isDrawMatch(match.score);
+        
+        // Assign points based on match outcome
+        const winnerPoints = isDraw ? 1 : 2; // 2 for win, 1 for draw
+        const loserPoints = isDraw ? 1 : 0;  // 1 for draw, 0 for loss
+        
+        [match.winner1_id, match.winner2_id].forEach(playerId => {
+          if (playerId && relevantPlayers.includes(playerId)) {
+            week.playerPoints[playerId] = (week.playerPoints[playerId] || 0) + winnerPoints;
+            week[playerMap[playerId]] = week.playerPoints[playerId];
+            week.total += winnerPoints;
+          }
+        });
+        
+        [match.loser1_id, match.loser2_id].forEach(playerId => {
+          if (playerId && relevantPlayers.includes(playerId)) {
+            week.playerPoints[playerId] = (week.playerPoints[playerId] || 0) + loserPoints;
+            week[playerMap[playerId]] = week.playerPoints[playerId];
+            week.total += loserPoints;
+          }
+        });
+      }
+    });
+    
+    // Cumulative sum for each player's points
+    for (let i = 1; i < weekBuckets.length; i++) {
+      const prevWeek = weekBuckets[i-1];
+      const currWeek = weekBuckets[i];
+      
+      relevantPlayers.forEach(playerId => {
+        if (playerMap[playerId]) {
+          currWeek.playerPoints[playerId] += prevWeek.playerPoints[playerId];
+          currWeek[playerMap[playerId]] = currWeek.playerPoints[playerId];
+        }
+      });
+      currWeek.total += prevWeek.total;
+    }
+    
+    // Convert to percentage data for stack area chart
+    return weekBuckets.map(week => {
+      const percentData = { name: week.name };
+      let totalPoints = week.total;
+      
+      // If total is 0, we can't calculate percentages
+      if (totalPoints === 0) {
+        relevantPlayers.forEach(playerId => {
+          if (playerMap[playerId]) {
+            percentData[playerMap[playerId]] = 0;
+          }
+        });
+        return percentData;
+      }
+      
+      // Calculate percentage for each player
+      relevantPlayers.forEach(playerId => {
+        const playerName = playerMap[playerId];
+        if (playerName) {
+          percentData[playerName] = ((week.playerPoints[playerId] / totalPoints) * 100).toFixed(1);
+        }
+      });
+      return percentData;
+    });
+  }, [filteredMatches, selectedPlayer, players, hasMatchData, getDateRange, isDrawMatch]);
 
   const matchTypeData = useMemo(() => {
     const singles = filteredMatches.filter(match => match.match_type === 'singles').length;
@@ -290,8 +437,6 @@ const Analytics = () => {
     );
   }
 
-  const hasData = filteredMatches.length > 0;
-  
   const headToHeadRowPlayers = selectedPlayer === "all" 
     ? players 
     : players.filter(player => player.id === selectedPlayer);
@@ -412,7 +557,7 @@ const Analytics = () => {
             <CardDescription>Singles vs Doubles</CardDescription>
           </CardHeader>
           <CardContent className="h-[200px]">
-            {hasData && (matchTypeData[0].value > 0 || matchTypeData[1].value > 0) ? (
+            {hasMatchData && (matchTypeData[0].value > 0 || matchTypeData[1].value > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -473,7 +618,7 @@ const Analytics = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
-              {hasData ? (
+              {hasMatchData ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={monthlyPerformanceData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -492,6 +637,55 @@ const Analytics = () => {
               )}
             </CardContent>
           </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Accumulated Points Distribution</CardTitle>
+              <CardDescription>
+                Percentage of total accumulated points over time by player
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+              {hasMatchData && weeklyPointsData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={weeklyPointsData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <defs>
+                      {Object.keys(weeklyPointsData[0] || {})
+                        .filter(key => key !== 'name' && typeof key === 'string' && key.trim() !== '')
+                        .map((key, index) => (
+                          <linearGradient key={key} id={`color-${key.replace(" ", "_")}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={COLORS[index % COLORS.length]} stopOpacity={0.9}/>
+                            <stop offset="95%" stopColor={COLORS[index % COLORS.length]} stopOpacity={0.4}/>
+                          </linearGradient>
+                        ))}
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis label={{ value: 'Points %', angle: -90, position: 'insideLeft' }} />
+                    <Tooltip formatter={(value) => [`${value}%`, '']} />
+                    <Legend />
+                    {Object.keys(weeklyPointsData[0] || {})
+                      .filter(key => key !== 'name' && typeof key === 'string' && key.trim() !== '')
+                      .map((key, index) => (
+                        <Area 
+                          key={key}
+                          type="monotone" 
+                          dataKey={key} 
+                          stackId="1"
+                          stroke={COLORS[index % COLORS.length]}
+                          fillOpacity={1}
+                          fill={`url(#color-${key.replace(" ", "_")})`}
+                        />
+                      ))}
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-muted-foreground">No player points data available.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
         <TabsContent value="productivity" className="space-y-4">
           <Card>
@@ -502,7 +696,7 @@ const Analytics = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
-              {hasData ? (
+              {hasMatchData ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyPerformanceData}>
                     <CartesianGrid strokeDasharray="3 3" />
