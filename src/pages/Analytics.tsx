@@ -32,7 +32,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 
 // More visually friendly colors with better contrast for charts
 // More visually friendly colors with better contrast for charts
-const COLORS = ['#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#073b4c', '#386641', "#540b0e", "#e0b1cb", "#f15bb5", "#4361ee"];
+const COLORS = ['#ef233c', '#ffd166', '#06d6a0', '#118ab2', '#073b4c', '#386641', "#540b0e", "#e0b1cb", "#f15bb5", "#4361ee"];
 const Analytics = () => {
   type H2hSortField = "total" | "wins" | "draws" | "losses" | "winRate" | "notLoseRate";
   type PartnerSortField = "total" | "wins" | "draws" | "losses" | "winRate" | "notLoseRate";
@@ -94,6 +94,33 @@ const Analytics = () => {
         match.loser1_id === selectedPlayer ||
         match.loser2_id === selectedPlayer
       );
+    });
+    // Debug output
+    console.log('[Analytics] startDate:', normStart, 'endDate:', normEnd, 'filteredMatches:', filtered.length);
+    return filtered;
+  }, [matches, selectedPlayer, timePeriod]);
+
+  // Apply date filter to matches
+  const filteredMatchesJustByDate = useMemo(() => {
+    const startDate = getDateRange();
+    const endDate = new Date(); // Current date
+
+    // Normalize to midnight (local time)
+    const normalizeDate = (date: Date) => {
+      const d = new Date(date);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    };
+    const normStart = normalizeDate(startDate);
+    const normEnd = normalizeDate(endDate);
+
+    const filtered = matches.filter(match => {
+      // If match.match_date is a string, parse as ISO
+      const matchDate = normalizeDate(new Date(match.match_date));
+      // Check if matchDate is between normStart and normEnd (inclusive)
+      const isInTimeRange = matchDate >= normStart && matchDate <= normEnd;
+      if (!isInTimeRange) return false;
+      return true;      
     });
     // Debug output
     console.log('[Analytics] startDate:', normStart, 'endDate:', normEnd, 'filteredMatches:', filtered.length);
@@ -343,29 +370,31 @@ const Analytics = () => {
     // console.log(JSON.stringify(weekBuckets));
     // Initialize player data if a specific player is selected
     let relevantPlayers = [];
-    if (selectedPlayer === "all") {
-      // Get the top 5 most active players
-      const playerMatches = {};
-      filteredMatches.forEach(match => {
-        const playerIds = [match.winner1_id, match.loser1_id];
-        if (match.winner2_id) playerIds.push(match.winner2_id);
-        if (match.loser2_id) playerIds.push(match.loser2_id);
-        
-        playerIds.forEach(id => {
-          if (!id) return;
-          playerMatches[id] = (playerMatches[id] || 0) + 1;
-        });
-      });
+    // Get the top 10 most active players
+    const playerMatches = {};
+    filteredMatches.forEach(match => {
+      const playerIds = [match.winner1_id, match.loser1_id];
+      if (match.winner2_id) playerIds.push(match.winner2_id);
+      if (match.loser2_id) playerIds.push(match.loser2_id);
       
-      // Get the top 5 most active players
+      playerIds.forEach(id => {
+        if (!id) return;
+        playerMatches[id] = (playerMatches[id] || 0) + 1;
+      });
+    });
+    
+    if (selectedPlayer == "all") {
+      // Get the top 10 most active players
       relevantPlayers = Object.entries(playerMatches)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)
         .map(([id]) => id);
-    } else {
-      relevantPlayers = [selectedPlayer];
+    }
+    else {
+      relevantPlayers = Object.keys(playerMatches)
     }
     
+    // console.log(relevantPlayers)
     // Initialize player points for each week
     const playerMap = {};
     relevantPlayers.forEach(playerId => {
@@ -380,7 +409,8 @@ const Analytics = () => {
     });
 
     // Sort matches by date, oldest first
-    const sortedMatches = [...filteredMatches].sort((a, b) => 
+    const countMatches = selectedPlayer == "all" ? [...filteredMatches] : [...filteredMatchesJustByDate];
+    const sortedMatches = countMatches.sort((a, b) => 
       new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
     );
     // console.log(JSON.stringify(sortedMatches));
@@ -417,8 +447,6 @@ const Analytics = () => {
       }
     });
 
-    // console.log(JSON.stringify(weekBuckets));
-    
     // Cumulative sum for each player's points
     for (let i = 1; i < weekBuckets.length; i++) {
       const prevWeek = weekBuckets[i-1];
@@ -432,12 +460,26 @@ const Analytics = () => {
       });
       currWeek.total += prevWeek.total;
     }
-    
     // Convert to data for stack area chart with both percentage and raw points
     return weekBuckets.map(week => {
       const chartData = { name: week.name };
       let totalPoints = week.total;
-      
+
+      if (selectedPlayer !== "all") {
+        const playerName = playerMap[selectedPlayer];
+        // Single player selected: create two categories: selected player vs the rest
+        const selectedPlayerPoints = week.playerPoints[selectedPlayer] || 0;
+        const restPoints = totalPoints - selectedPlayerPoints;
+        // console.log(selectedPlayerPoints)
+
+        chartData[playerName] = ((selectedPlayerPoints / totalPoints) * 100).toFixed(1);
+        chartData["Team"] = ((restPoints / totalPoints) * 100).toFixed(1);
+        chartData[`${playerName}_raw`] = selectedPlayerPoints;
+        chartData["Team_raw"] = restPoints;
+
+        return chartData;
+      }
+
       // If total is 0, we can't calculate percentages
       if (totalPoints === 0) {
         relevantPlayers.forEach(playerId => {
@@ -449,7 +491,7 @@ const Analytics = () => {
         });
         return chartData;
       }
-      
+
       // Calculate percentage for each player and store raw points
       relevantPlayers.forEach(playerId => {
         const playerName = playerMap[playerId];
@@ -623,7 +665,7 @@ const Analytics = () => {
                     paddingAngle={2}
                   >
                     {matchTypeData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length + 2]} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(value, name) => [value, name]} />
