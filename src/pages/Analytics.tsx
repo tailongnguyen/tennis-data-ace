@@ -31,8 +31,8 @@ import { TableScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 // More visually friendly colors with better contrast for charts
-const COLORS = ['#4299E1', '#F6AD55', '#68D391', '#F687B3', '#B794F4', '#E9D8FD'];
-
+// More visually friendly colors with better contrast for charts
+const COLORS = ['#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#073b4c', '#386641', "#540b0e", "#e0b1cb", "#f15bb5", "#4361ee"];
 const Analytics = () => {
   type H2hSortField = "total" | "wins" | "draws" | "losses" | "winRate" | "notLoseRate";
   type PartnerSortField = "total" | "wins" | "draws" | "losses" | "winRate" | "notLoseRate";
@@ -70,15 +70,24 @@ const Analytics = () => {
   // Apply date filter to matches
   const filteredMatches = useMemo(() => {
     const startDate = getDateRange();
-    
-    return matches.filter(match => {
-      const matchDate = new Date(match.match_date);
-      const isInTimeRange = isAfter(matchDate, startDate);
-      
+    const endDate = new Date(); // Current date
+
+    // Normalize to midnight (local time)
+    const normalizeDate = (date: Date) => {
+      const d = new Date(date);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    };
+    const normStart = normalizeDate(startDate);
+    const normEnd = normalizeDate(endDate);
+
+    const filtered = matches.filter(match => {
+      // If match.match_date is a string, parse as ISO
+      const matchDate = normalizeDate(new Date(match.match_date));
+      // Check if matchDate is between normStart and normEnd (inclusive)
+      const isInTimeRange = matchDate >= normStart && matchDate <= normEnd;
       if (!isInTimeRange) return false;
-      
       if (selectedPlayer === "all") return true;
-      
       return (
         match.winner1_id === selectedPlayer ||
         match.winner2_id === selectedPlayer ||
@@ -86,6 +95,9 @@ const Analytics = () => {
         match.loser2_id === selectedPlayer
       );
     });
+    // Debug output
+    console.log('[Analytics] startDate:', normStart, 'endDate:', normEnd, 'filteredMatches:', filtered.length);
+    return filtered;
   }, [matches, selectedPlayer, timePeriod]);
   
   // Define a variable to check if we have match data to display
@@ -192,7 +204,7 @@ const Analytics = () => {
     let totalWins = 0;
     let totalDraws = 0;
     let totalLosses = 0;
-    let totalGames = 0;
+    let totalGames = totalMatches;
 
     if (selectedPlayer === "all") {
       players.forEach(player => {
@@ -204,13 +216,11 @@ const Analytics = () => {
         totalWins += wins;
         totalDraws += draws;
         totalLosses += losses;
-        totalGames += playerMatches.length;
       });
     } else {
       totalWins = getPlayerWins(selectedPlayer, filteredMatches);
       totalDraws = getPlayerDraws(selectedPlayer, filteredMatches);
       totalLosses = getPlayerLosses(selectedPlayer, filteredMatches);
-      totalGames = getPlayerMatches(selectedPlayer, filteredMatches).length;
     }
 
     const winRate = totalGames === 0 ? 0 : Math.round((totalWins / totalGames) * 100);
@@ -278,6 +288,33 @@ const Analytics = () => {
     }));
   }, [filteredMatches, selectedPlayer, isDrawMatch]);
   
+  // Generate dynamic player color map
+  // Only create color map for top 10 most active players (by matches played in filteredMatches)
+  const playerColorMap = useMemo(() => {
+    // Count matches played per player
+    const playerActivity = players.map(player => {
+      const matchesPlayed = filteredMatches.filter(match =>
+        match.winner1_id === player.id ||
+        match.winner2_id === player.id ||
+        match.loser1_id === player.id ||
+        match.loser2_id === player.id
+      ).length;
+      return { player, matchesPlayed };
+    });
+    // Sort descending by matches played and take top 10
+    const topPlayers = playerActivity
+      .sort((a, b) => b.matchesPlayed - a.matchesPlayed)
+      .slice(0, 10)
+      .map(a => a.player);
+    // Assign colors only to top 10
+    const colorMap: Record<string, string> = {};
+    topPlayers.forEach((player, index) => {
+      colorMap[player.name] = COLORS[index % COLORS.length];
+    });
+    console.log(colorMap)
+    return colorMap;
+  }, [players, filteredMatches]);
+
   // Weekly accumulated points data for the area chart
   const weeklyPointsData = useMemo(() => {
     // If no date range selected or no data available, return empty array
@@ -287,13 +324,14 @@ const Analytics = () => {
     const startDate = getDateRange();
     const endDate = new Date();
     
+    // console.log(startDate, endDate)
     // Calculate how many weeks to show
     const weekCount = Math.max(1, Math.ceil(differenceInWeeks(endDate, startDate)));
     
     // Create initial weekly buckets (max 20 weeks to avoid overcrowding)
     const displayWeeks = Math.min(weekCount, 20);
     const weekBuckets = Array.from({ length: displayWeeks }, (_, i) => {
-      const weekStart = startOfWeek(addWeeks(startDate, i));
+      const weekStart = startOfWeek(addWeeks(startDate, i)) < startDate ? startDate : startOfWeek(addWeeks(startDate, i));
       return {
         name: format(weekStart, 'MMM d'),
         weekStart,
@@ -302,7 +340,7 @@ const Analytics = () => {
         playerPoints: {}
       };
     });
-    
+    // console.log(JSON.stringify(weekBuckets));
     // Initialize player data if a specific player is selected
     let relevantPlayers = [];
     if (selectedPlayer === "all") {
@@ -322,7 +360,7 @@ const Analytics = () => {
       // Get the top 5 most active players
       relevantPlayers = Object.entries(playerMatches)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
+        .slice(0, 10)
         .map(([id]) => id);
     } else {
       relevantPlayers = [selectedPlayer];
@@ -345,7 +383,7 @@ const Analytics = () => {
     const sortedMatches = [...filteredMatches].sort((a, b) => 
       new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
     );
-
+    // console.log(JSON.stringify(sortedMatches));
     // Process matches to accumulate points by player and week
     sortedMatches.forEach(match => {
       const matchDate = new Date(match.match_date);
@@ -358,8 +396,8 @@ const Analytics = () => {
         const isDraw = isDrawMatch(match.score);
         
         // Assign points based on match outcome
-        const winnerPoints = isDraw ? 1 : 2; // 2 for win, 1 for draw
-        const loserPoints = isDraw ? 1 : 0;  // 1 for draw, 0 for loss
+        const winnerPoints = isDraw ? 1 : 3; // 2 for win, 1 for draw
+        const loserPoints = isDraw ? 1 : -1;  // 1 for draw, 0 for loss
         
         [match.winner1_id, match.winner2_id].forEach(playerId => {
           if (playerId && relevantPlayers.includes(playerId)) {
@@ -378,6 +416,8 @@ const Analytics = () => {
         });
       }
     });
+
+    // console.log(JSON.stringify(weekBuckets));
     
     // Cumulative sum for each player's points
     for (let i = 1; i < weekBuckets.length; i++) {
@@ -393,29 +433,33 @@ const Analytics = () => {
       currWeek.total += prevWeek.total;
     }
     
-    // Convert to percentage data for stack area chart
+    // Convert to data for stack area chart with both percentage and raw points
     return weekBuckets.map(week => {
-      const percentData = { name: week.name };
+      const chartData = { name: week.name };
       let totalPoints = week.total;
       
       // If total is 0, we can't calculate percentages
       if (totalPoints === 0) {
         relevantPlayers.forEach(playerId => {
           if (playerMap[playerId]) {
-            percentData[playerMap[playerId]] = 0;
+            const playerName = playerMap[playerId];
+            chartData[playerName] = 0;
+            chartData[`${playerName}_raw`] = 0; // Store raw points for tooltip
           }
         });
-        return percentData;
+        return chartData;
       }
       
-      // Calculate percentage for each player
+      // Calculate percentage for each player and store raw points
       relevantPlayers.forEach(playerId => {
         const playerName = playerMap[playerId];
         if (playerName) {
-          percentData[playerName] = ((week.playerPoints[playerId] / totalPoints) * 100).toFixed(1);
+          const playerPoints = week.playerPoints[playerId];
+          chartData[playerName] = ((playerPoints / totalPoints) * 100).toFixed(1);
+          chartData[`${playerName}_raw`] = playerPoints; // Store raw points for tooltip
         }
       });
-      return percentData;
+      return chartData;
     });
   }, [filteredMatches, selectedPlayer, players, hasMatchData, getDateRange, isDrawMatch]);
 
@@ -539,16 +583,22 @@ const Analytics = () => {
             <CardDescription>Win and not lose percentages</CardDescription>
           </CardHeader>
           <CardContent className="h-[200px]">
-            <div className="flex items-center justify-center h-full gap-8">
-              <div className="text-center">
-                <span className="text-4xl font-bold text-primary">{aggregatedMetrics.winRate}%</span>
-                <p className="text-sm text-muted-foreground mt-2">Win Rate</p>
+            {selectedPlayer !== "all" ? (
+              <div className="flex items-center justify-center h-full gap-8">
+                <div className="text-center">
+                  <span className="text-4xl font-bold text-primary">{aggregatedMetrics.winRate}%</span>
+                  <p className="text-sm text-muted-foreground mt-2">Win Rate</p>
+                </div>
+                <div className="text-center">
+                  <span className="text-4xl font-bold text-primary">{aggregatedMetrics.notLoseRate}%</span>
+                  <p className="text-sm text-muted-foreground mt-2">Not Lose Rate</p>
+                </div>
               </div>
-              <div className="text-center">
-                <span className="text-4xl font-bold text-primary">{aggregatedMetrics.notLoseRate}%</span>
-                <p className="text-sm text-muted-foreground mt-2">Not Lose Rate</p>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground text-center">This metric is only available if a single player is chosen.</p>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -654,25 +704,34 @@ const Analytics = () => {
                         .filter(key => key !== 'name' && typeof key === 'string' && key.trim() !== '')
                         .map((key, index) => (
                           <linearGradient key={key} id={`color-${key.replace(" ", "_")}`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={COLORS[index % COLORS.length]} stopOpacity={0.9}/>
-                            <stop offset="95%" stopColor={COLORS[index % COLORS.length]} stopOpacity={0.4}/>
+                            <stop offset="5%" stopColor={playerColorMap[key] || COLORS[index % COLORS.length]} stopOpacity={0.9}/>
+                            <stop offset="95%" stopColor={playerColorMap[key] || COLORS[index % COLORS.length]} stopOpacity={0.4}/>
                           </linearGradient>
                         ))}
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis label={{ value: 'Points %', angle: -90, position: 'insideLeft' }} />
-                    <Tooltip formatter={(value) => [`${value}%`, '']} />
+                    <Tooltip 
+                      formatter={(value, name, props) => {
+                        // If it's a raw points field (ending with _raw), don't display in the tooltip
+                        if (name.endsWith('_raw')) return null;
+                        
+                        // Get the corresponding raw points value
+                        const rawPoints = props.payload[`${name}_raw`];
+                        return [`${value}% (${rawPoints} pts)`, name];
+                      }}
+                    />
                     <Legend />
                     {Object.keys(weeklyPointsData[0] || {})
-                      .filter(key => key !== 'name' && typeof key === 'string' && key.trim() !== '')
+                      .filter(key => key !== 'name' && !key.endsWith('_raw') && typeof key === 'string' && key.trim() !== '')
                       .map((key, index) => (
                         <Area 
                           key={key}
                           type="monotone" 
                           dataKey={key} 
                           stackId="1"
-                          stroke={COLORS[index % COLORS.length]}
+                          stroke={playerColorMap[key] || COLORS[index % COLORS.length]}
                           fillOpacity={1}
                           fill={`url(#color-${key.replace(" ", "_")})`}
                         />
