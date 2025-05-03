@@ -52,21 +52,26 @@ const Analytics = () => {
   // Date range filtering function
   const getDateRange = () => {
     const now = new Date();
+    const normalizeDate = (date: Date) => {
+      const normalized = new Date(date);
+      normalized.setHours(0, 0, 0, 0);
+      return normalized;
+    };
+
     switch (timePeriod) {
       case "30d":
-        return subDays(now, 30);
+        return normalizeDate(subDays(now, 30));
       case "90d":
-        return subDays(now, 90);
+        return normalizeDate(subDays(now, 90));
       case "1y":
-        return subDays(now, 365);
+        return normalizeDate(subDays(now, 365));
       case "custom":
         // Custom date handling would go here if implemented
-        return subDays(now, 30); // Default fallback
+        return normalizeDate(subDays(now, 30)); // Default fallback
       default:
-        return new Date(0); // Beginning of time for "all"
+        return normalizeDate(new Date(0)); // Beginning of time for "all"
     }
   };
-  
   // Apply date filter to matches
   const filteredMatches = useMemo(() => {
     const startDate = getDateRange();
@@ -344,33 +349,40 @@ const Analytics = () => {
 
   // Weekly accumulated points data for the area chart
   const weeklyPointsData = useMemo(() => {
-    // If no date range selected or no data available, return empty array
+    // If no data available, return empty array
     if (!hasMatchData) return [];
     
     // Determine start and end date for the analysis
     const startDate = getDateRange();
     const endDate = new Date();
     
-    // console.log(startDate, endDate)
     // Calculate how many weeks to show
-    const weekCount = Math.max(1, Math.ceil(differenceInWeeks(endDate, startDate)));
+    const totalWeeks = Math.max(1, differenceInWeeks(endDate, startDate)) + 1;
     
-    // Create initial weekly buckets (max 20 weeks to avoid overcrowding)
-    const displayWeeks = Math.min(weekCount, 20);
-    const weekBuckets = Array.from({ length: displayWeeks }, (_, i) => {
-      const weekStart = startOfWeek(addWeeks(startDate, i)) < startDate ? startDate : startOfWeek(addWeeks(startDate, i));
-      return {
-        name: format(weekStart, 'MMM d'),
-        weekStart,
-        weekEnd: endOfWeek(weekStart),
+    // First step: Create all potential week buckets
+    const allWeekBuckets = [];
+    for (let i = 0; i < totalWeeks; i++) {
+      const weekStart = startOfWeek(addWeeks(startDate, i));
+      // Ensure we don't go before our start date
+      const adjustedWeekStart = weekStart < startDate ? startDate : weekStart;
+      // For the end date
+      const weekEnd = endOfWeek(weekStart);
+      // Ensure we don't go beyond current date
+      const adjustedWeekEnd = weekEnd > endDate ? endDate : weekEnd;
+      
+      allWeekBuckets.push({
+        name: format(adjustedWeekStart, 'MMM d'),
+        weekStart: adjustedWeekStart,
+        weekEnd: adjustedWeekEnd,
         total: 0,
-        playerPoints: {}
-      };
-    });
-    // console.log(JSON.stringify(weekBuckets));
-    // Initialize player data if a specific player is selected
+        playerPoints: {},
+        hasMatches: false // Track if this week has any matches
+      });
+    }
+    
+    // Initialize player data
     let relevantPlayers = [];
-    // Get the top 10 most active players
+    // Get player match counts
     const playerMatches = {};
     filteredMatches.forEach(match => {
       const playerIds = [match.winner1_id, match.loser1_id];
@@ -383,10 +395,10 @@ const Analytics = () => {
       });
     });
     
-    if (selectedPlayer == "all") {
+    if (selectedPlayer === "all") {
       // Get the top 10 most active players
       relevantPlayers = Object.entries(playerMatches)
-        .sort((a, b) => b[1] - a[1])
+        .sort((a, b) => Number(b[1]) - Number(a[1]))
         .slice(0, 10)
         .map(([id]) => id);
     }
@@ -394,14 +406,13 @@ const Analytics = () => {
       relevantPlayers = Object.keys(playerMatches)
     }
     
-    // console.log(relevantPlayers)
     // Initialize player points for each week
     const playerMap = {};
     relevantPlayers.forEach(playerId => {
       const player = players.find(p => p.id === playerId);
       if (player) {
         playerMap[playerId] = player.name;
-        weekBuckets.forEach(week => {
+        allWeekBuckets.forEach(week => {
           week.playerPoints[playerId] = 0;
           week[player.name] = 0; // For direct access in the chart
         });
@@ -413,21 +424,25 @@ const Analytics = () => {
     const sortedMatches = countMatches.sort((a, b) => 
       new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
     );
-    // console.log(JSON.stringify(sortedMatches));
+    
     // Process matches to accumulate points by player and week
     sortedMatches.forEach(match => {
       const matchDate = new Date(match.match_date);
-      const weekIndex = weekBuckets.findIndex(week => 
+      
+      // Find the appropriate week bucket for this match
+      const weekIndex = allWeekBuckets.findIndex(week => 
         matchDate >= week.weekStart && matchDate <= week.weekEnd
       );
       
       if (weekIndex >= 0) {
-        const week = weekBuckets[weekIndex];
+        const week = allWeekBuckets[weekIndex];
+        week.hasMatches = true; // Mark this week as having matches
+        
         const isDraw = isDrawMatch(match.score);
         
         // Assign points based on match outcome
-        const winnerPoints = isDraw ? 1 : 3; // 2 for win, 1 for draw
-        const loserPoints = isDraw ? 1 : -1;  // 1 for draw, 0 for loss
+        const winnerPoints = isDraw ? 1 : 3; // 3 for win, 1 for draw
+        const loserPoints = isDraw ? 1 : -1;  // 1 for draw, -1 for loss
         
         [match.winner1_id, match.winner2_id].forEach(playerId => {
           if (playerId && relevantPlayers.includes(playerId)) {
@@ -447,6 +462,59 @@ const Analytics = () => {
       }
     });
 
+    // Filter to keep only weeks that have matches
+    const weeksWithMatches = allWeekBuckets.filter(week => week.hasMatches);
+    
+    // If we still have too many weeks, consolidate them optimally
+    let weekBuckets = weeksWithMatches;
+    const MAX_WEEKS = 12;
+    
+    if (weeksWithMatches.length > MAX_WEEKS) {
+      // Consolidated buckets strategy: even distribution
+      const groupSize = Math.ceil(weeksWithMatches.length / MAX_WEEKS);
+      weekBuckets = [];
+      
+      for (let i = 0; i < weeksWithMatches.length; i += groupSize) {
+        const groupEnd = Math.min(i + groupSize - 1, weeksWithMatches.length - 1);
+        const startWeek = weeksWithMatches[i];
+        const endWeek = weeksWithMatches[groupEnd];
+        
+        // Create a consolidated bucket
+        const consolidatedBucket = {
+          name: `${format(startWeek.weekStart, 'MMM d')}-${format(endWeek.weekEnd, 'MMM d')}`,
+          weekStart: startWeek.weekStart,
+          weekEnd: endWeek.weekEnd,
+          total: 0,
+          playerPoints: {},
+          hasMatches: true
+        };
+        
+        // Initialize player points
+        relevantPlayers.forEach(playerId => {
+          if (playerMap[playerId]) {
+            consolidatedBucket.playerPoints[playerId] = 0;
+            consolidatedBucket[playerMap[playerId]] = 0;
+          }
+        });
+        
+        // Sum points from all weeks in this group
+        for (let j = i; j <= groupEnd; j++) {
+          const week = weeksWithMatches[j];
+          
+          relevantPlayers.forEach(playerId => {
+            if (playerMap[playerId]) {
+              consolidatedBucket.playerPoints[playerId] += week.playerPoints[playerId] || 0;
+              consolidatedBucket[playerMap[playerId]] = consolidatedBucket.playerPoints[playerId];
+            }
+          });
+          
+          consolidatedBucket.total += week.total;
+        }
+        
+        weekBuckets.push(consolidatedBucket);
+      }
+    }
+
     // Cumulative sum for each player's points
     for (let i = 1; i < weekBuckets.length; i++) {
       const prevWeek = weekBuckets[i-1];
@@ -460,6 +528,7 @@ const Analytics = () => {
       });
       currWeek.total += prevWeek.total;
     }
+    
     // Convert to data for stack area chart with both percentage and raw points
     return weekBuckets.map(week => {
       const chartData = { name: week.name };
@@ -470,7 +539,6 @@ const Analytics = () => {
         // Single player selected: create two categories: selected player vs the rest
         const selectedPlayerPoints = week.playerPoints[selectedPlayer] || 0;
         const restPoints = totalPoints - selectedPlayerPoints;
-        // console.log(selectedPlayerPoints)
 
         chartData[playerName] = ((selectedPlayerPoints / totalPoints) * 100).toFixed(1);
         chartData["Team"] = ((restPoints / totalPoints) * 100).toFixed(1);
