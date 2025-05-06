@@ -23,7 +23,7 @@ import { useMatches } from "@/hooks/useMatches";
 import { usePlayers } from "@/hooks/usePlayers";
 import { format, subDays, parseISO, isWithinInterval, isAfter, addWeeks, startOfWeek, endOfWeek, isSameWeek, differenceInWeeks } from "date-fns";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { Activity, BarChart3, PieChartIcon, Search } from "lucide-react";
+import { Activity, BarChart3, ChevronDown, PieChartIcon, Search } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -811,11 +811,32 @@ const Analytics = () => {
                   <AreaChart data={weeklyPointsData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <defs>
                       {Object.keys(weeklyPointsData[0] || {})
-                        .filter(key => key !== 'name' && typeof key === 'string' && key.trim() !== '')
+                        .filter(key => {
+                          // Safely check if key is a string and not ending with _raw
+                          return key !== 'name' && 
+                                 typeof key === 'string' && 
+                                 key.trim() !== '' && 
+                                 !key.toString().endsWith('_raw');
+                        })
                         .map((key, index) => (
-                          <linearGradient key={key} id={`color-${key.replace(" ", "_")}`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={playerColorMap[key] || COLORS[index % COLORS.length]} stopOpacity={0.9}/>
-                            <stop offset="95%" stopColor={playerColorMap[key] || COLORS[index % COLORS.length]} stopOpacity={0.4}/>
+                          <linearGradient 
+                            key={key} 
+                            id={`color-${key.toString().replace(" ", "_")}`} 
+                            x1="0" 
+                            y1="0" 
+                            x2="0" 
+                            y2="1"
+                          >
+                            <stop 
+                              offset="5%" 
+                              stopColor={playerColorMap[key] || COLORS[index % COLORS.length]} 
+                              stopOpacity={0.9}
+                            />
+                            <stop 
+                              offset="95%" 
+                              stopColor={playerColorMap[key] || COLORS[index % COLORS.length]} 
+                              stopOpacity={0.4}
+                            />
                           </linearGradient>
                         ))}
                     </defs>
@@ -825,16 +846,23 @@ const Analytics = () => {
                     <Tooltip 
                       formatter={(value, name, props) => {
                         // If it's a raw points field (ending with _raw), don't display in the tooltip
-                        if (name.endsWith('_raw')) return null;
+                        if (typeof name === 'string' && name.endsWith('_raw')) return null;
                         
                         // Get the corresponding raw points value
-                        const rawPoints = props.payload[`${name}_raw`];
+                        const rawPointsKey = `${name}_raw`;
+                        const rawPoints = props.payload[rawPointsKey];
                         return [`${value}% (${rawPoints} pts)`, name];
                       }}
                     />
                     <Legend />
                     {Object.keys(weeklyPointsData[0] || {})
-                      .filter(key => key !== 'name' && !key.endsWith('_raw') && typeof key === 'string' && key.trim() !== '')
+                      .filter(key => {
+                        // Safely check if key is a string and not ending with _raw
+                        return key !== 'name' && 
+                               typeof key === 'string' && 
+                               key.trim() !== '' && 
+                               !key.toString().endsWith('_raw');
+                      })
                       .map((key, index) => (
                         <Area 
                           key={key}
@@ -843,7 +871,7 @@ const Analytics = () => {
                           stackId="1"
                           stroke={playerColorMap[key] || COLORS[index % COLORS.length]}
                           fillOpacity={1}
-                          fill={`url(#color-${key.replace(" ", "_")})`}
+                          fill={`url(#color-${key.toString().replace(" ", "_")})`}
                         />
                       ))}
                   </AreaChart>
