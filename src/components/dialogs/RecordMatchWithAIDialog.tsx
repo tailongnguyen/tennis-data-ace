@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   Dialog,
@@ -27,6 +28,8 @@ import { useMatches, CreateMatchData } from "@/hooks/useMatches";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { GoogleGenAI } from "@google/genai";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Schema for the AI input form
 const aiInputSchema = z.object({
@@ -55,6 +58,9 @@ export function RecordMatchWithAIDialog() {
   const [processingMatches, setProcessingMatches] = useState(false);
   const [processedMatches, setProcessedMatches] = useState<ProcessedMatch[]>([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState<string | null>(null);
+  const [apiKeyLoading, setApiKeyLoading] = useState(true);
+  const { session } = useAuth();
 
   const form = useForm<AIInputFormValues>({
     resolver: zodResolver(aiInputSchema),
@@ -63,21 +69,56 @@ export function RecordMatchWithAIDialog() {
     },
   });
 
+  // Fetch the Gemini API key from the Supabase database
+  useEffect(() => {
+    const fetchGeminiApiKey = async () => {
+      try {
+        setApiKeyLoading(true);
+        if (!session) {
+          toast.error("You must be logged in to use this feature");
+          return;
+        }
+
+        const { data, error } = await supabase.rpc('get_api_key', { key_name: 'GEMINI_API_KEY' });
+        
+        if (error) {
+          console.error("Error fetching Gemini API key:", error);
+          toast.error("Failed to fetch API key. Please make sure it's set up correctly in the database.");
+          return;
+        }
+
+        if (!data) {
+          console.error("No Gemini API key found in database");
+          toast.error("No Gemini API key found. Please add it to the database.");
+          return;
+        }
+
+        setGeminiApiKey(data);
+      } catch (error) {
+        console.error("Error fetching Gemini API key:", error);
+        toast.error("Failed to fetch API key");
+      } finally {
+        setApiKeyLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchGeminiApiKey();
+    }
+  }, [session]);
+
   // Process the natural language input using Gemini API directly
   const processMatchText = async (matchInput: string) => {
     setProcessingMatches(true);
     try {
-      // Get Gemini API key from environment variable
-      // In a real production app, you would store this securely
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      
-      if (!apiKey) {
-        toast.error("Gemini API key not found. Please add VITE_GEMINI_API_KEY to your .env.local file.");
+      if (!geminiApiKey) {
+        toast.error("Gemini API key not found. Please add the GEMINI_API_KEY to your database.");
+        setProcessingMatches(false);
         return;
       }
 
       // Initialize the Gemini API
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = new GoogleGenAI({ apiKey: geminiApiKey });
 
       // Format player list for the prompt
       const playerNames = players.map(player => player.name).join(', ');
@@ -280,7 +321,19 @@ ${matchInput}
         </DialogHeader>
         
         <div className="flex-1 overflow-hidden flex flex-col mt-4">
-          {!showConfirmation ? (
+          {apiKeyLoading ? (
+            <div className="flex items-center justify-center p-6">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              <p>Loading API key...</p>
+            </div>
+          ) : !geminiApiKey ? (
+            <Alert variant="destructive">
+              <AlertTitle>API Key Missing</AlertTitle>
+              <AlertDescription>
+                The Gemini API key is not set up in the database. Please add a key with the name 'GEMINI_API_KEY' to the api_keys table.
+              </AlertDescription>
+            </Alert>
+          ) : !showConfirmation ? (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField

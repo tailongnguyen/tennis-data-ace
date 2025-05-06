@@ -6,19 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
 
 const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { signUp } = useAuth();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       await signUp(email, password, fullName);
+      toast.success("Account created! Please check your email for verification.");
     } catch (error) {
       // Error is handled in the AuthContext
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -62,7 +68,9 @@ const Register = () => {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">Register</Button>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Registering..." : "Register"}
+              </Button>
             </div>
           </form>
         </CardContent>
