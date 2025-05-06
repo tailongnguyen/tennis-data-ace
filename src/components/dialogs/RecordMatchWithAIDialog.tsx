@@ -61,6 +61,7 @@ export function RecordMatchWithAIDialog() {
   const [geminiApiKey, setGeminiApiKey] = useState<string | null>(null);
   const [apiKeyLoading, setApiKeyLoading] = useState(true);
   const { session } = useAuth();
+  const [keyFetchAttempted, setKeyFetchAttempted] = useState(false);
 
   const form = useForm<AIInputFormValues>({
     resolver: zodResolver(aiInputSchema),
@@ -71,41 +72,44 @@ export function RecordMatchWithAIDialog() {
 
   // Fetch the Gemini API key from the Supabase database
   useEffect(() => {
+    // Prevent multiple fetch attempts if we've already tried or if session is not available
+    if (keyFetchAttempted || !session) {
+      return;
+    }
+
     const fetchGeminiApiKey = async () => {
       try {
         setApiKeyLoading(true);
-        if (!session) {
-          toast.error("You must be logged in to use this feature");
-          return;
-        }
-
+        
         const { data, error } = await supabase.rpc('get_api_key', { key_name: 'GEMINI_API_KEY' });
         
         if (error) {
           console.error("Error fetching Gemini API key:", error);
           toast.error("Failed to fetch API key. Please make sure it's set up correctly in the database.");
-          return;
-        }
-
-        if (!data) {
+        } else if (!data) {
           console.error("No Gemini API key found in database");
           toast.error("No Gemini API key found. Please add it to the database.");
-          return;
+        } else {
+          setGeminiApiKey(data);
         }
-
-        setGeminiApiKey(data);
       } catch (error) {
         console.error("Error fetching Gemini API key:", error);
         toast.error("Failed to fetch API key");
       } finally {
         setApiKeyLoading(false);
+        setKeyFetchAttempted(true);
       }
     };
 
-    if (session) {
-      fetchGeminiApiKey();
+    fetchGeminiApiKey();
+  }, [session, keyFetchAttempted]);
+
+  // Reset key fetch flag when dialog opens or closes
+  useEffect(() => {
+    if (!open) {
+      setKeyFetchAttempted(false);
     }
-  }, [session]);
+  }, [open]);
 
   // Process the natural language input using Gemini API directly
   const processMatchText = async (matchInput: string) => {
