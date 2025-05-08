@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -30,6 +29,7 @@ import { Loader2 } from "lucide-react";
 import { GoogleGenAI } from "@google/genai";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
 
 // Schema for the AI input form
 const aiInputSchema = z.object({
@@ -49,6 +49,42 @@ interface ProcessedMatch {
   matchDate: Date;
   isValid: boolean;
   errorMessage?: string;
+}
+
+// Helper to check for winner for a single set
+function getSetWinner(p1Score: number, p2Score: number): "p1" | "p2" | null {
+  if (!isNaN(p1Score) && !isNaN(p2Score)) {
+    if (p1Score > p2Score) return "p1";
+    if (p2Score > p1Score) return "p2";
+  }
+  return null;
+}
+
+// Helper to determine match winners based on sets
+function determineMatchWinners(score: string): "p1" | "p2" | "tie" {
+  const sets = score.split(',').filter(set => set.includes('-'));
+  let p1Sets = 0;
+  let p2Sets = 0;
+  
+  sets.forEach(set => {
+    const [s1, s2] = set.split('-').map(Number);
+    const winner = getSetWinner(s1, s2);
+    if (winner === "p1") p1Sets++;
+    if (winner === "p2") p2Sets++;
+  });
+  
+  if (p1Sets > p2Sets) return "p1";
+  if (p2Sets > p1Sets) return "p2";
+  return "tie";
+}
+
+// Helper to normalize score to higher-lower format
+function normalizeScore(score: string): string {
+  const sets = score.split(',');
+  return sets.map(set => {
+    const [a, b] = set.split('-').map(Number);
+    return a >= b ? `${a}-${b}` : `${b}-${a}`;
+  }).join(',');
 }
 
 export function RecordMatchWithAIDialog() {
@@ -131,7 +167,7 @@ export function RecordMatchWithAIDialog() {
       const prompt = `
 Input rules:
 1. Each line can be one of the following:
-   - A date (e.g., "1/5/2025", "2025-05-01", etc.)
+   - A date (either in dd/mm/yyyy or yyyy-mm-dd format)
    - A singles match
    - A doubles match
 2. If a line is a date, all subsequent matches are associated with that date until a new date line appears.
@@ -272,18 +308,37 @@ ${matchInput}
         const player3Id = players.find(p => p.name === match.player3)?.id;
         const player4Id = match.player4 ? players.find(p => p.name === match.player4)?.id : null;
 
-        // Get winners and losers from the score
-        // For simplicity, we'll assume team1 (player1/player2) is the winner for now
-        // In a real implementation, you'd analyze the score to determine the winner
-        const matchData: CreateMatchData = {
-          winner1_id: player1Id || "",
-          winner2_id: match.matchType === 'doubles' ? player2Id || "" : null,
-          loser1_id: player3Id || "",
-          loser2_id: match.matchType === 'doubles' ? player4Id || "" : null,
-          match_type: match.matchType,
-          score: match.score,
-          match_date: match.matchDate.toISOString(),
-        };
+        // Determine winners and losers based on the score
+        const matchWinner = determineMatchWinners(match.score);
+        
+        // Normalize the score to ensure higher score comes first
+        const normalizedScore = normalizeScore(match.score);
+        
+        let matchData: CreateMatchData;
+
+        if (matchWinner === "p1" || matchWinner === "tie") {
+          // Team 1 is the winner or it's a tie
+          matchData = {
+            winner1_id: player1Id || "",
+            winner2_id: match.matchType === 'doubles' ? player2Id : null,
+            loser1_id: player3Id || "",
+            loser2_id: match.matchType === 'doubles' ? player4Id : null,
+            match_type: match.matchType,
+            score: normalizedScore,
+            match_date: match.matchDate.toISOString(),
+          };
+        } else {
+          // Team 2 is the winner
+          matchData = {
+            winner1_id: player3Id || "",
+            winner2_id: match.matchType === 'doubles' ? player4Id : null,
+            loser1_id: player1Id || "",
+            loser2_id: match.matchType === 'doubles' ? player2Id : null,
+            match_type: match.matchType,
+            score: normalizedScore,
+            match_date: match.matchDate.toISOString(),
+          };
+        }
 
         return matchData;
       });
@@ -405,7 +460,7 @@ Hùng Anh / Thiện, Hiệp / Hải 5-5`}
                         {match.isValid ? (
                           <>
                             <div className="text-xs mb-1">
-                              <span className="font-medium">Date:</span> {match.matchDate.toLocaleDateString()}
+                              <span className="font-medium">Date:</span> {format(match.matchDate, "d/M/yyyy")}
                             </div>
                             <div className="text-xs mb-1">
                               {match.matchType === 'singles' ? (

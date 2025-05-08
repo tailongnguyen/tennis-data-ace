@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -61,12 +60,12 @@ function determineMatchWinners(setScores: { p1: string; p2: string }[]): "p1" | 
   return p1Sets > p2Sets ? "p1" : "p2";
 }
 
-// New helper to normalize score to higher-lower format
+// Helper to normalize score to higher-lower format
 function normalizeScore(score: string): string {
   const sets = score.split(',');
   return sets.map(set => {
     const [a, b] = set.split('-').map(Number);
-    return a > b ? `${a}-${b}` : `${b}-${a}`;
+    return a >= b ? `${a}-${b}` : `${b}-${a}`;
   }).join(',');
 }
 
@@ -124,6 +123,9 @@ export function RecordMatchDialog() {
         return;
       }
 
+      // Normalize score to ensure higher score comes first
+      const normalizedScore = normalizeScore(formattedScore);
+
       let matchData: CreateMatchData;
 
       // Setup match data based on singles or doubles
@@ -134,7 +136,7 @@ export function RecordMatchDialog() {
           loser1_id: matchWinner === "p1" ? values.player3 : values.player1,
           loser2_id: null,
           match_type: 'singles',
-          score: formattedScore,
+          score: normalizedScore,
           match_date: values.matchDate ? values.matchDate.toISOString() : new Date().toISOString(),
         };
       } else { // doubles
@@ -149,7 +151,7 @@ export function RecordMatchDialog() {
           loser1_id: matchWinner === "p1" ? values.player3 : values.player1,
           loser2_id: matchWinner === "p1" ? values.player4 : values.player2,
           match_type: 'doubles',
-          score: formattedScore,
+          score: normalizedScore,
           match_date: values.matchDate ? values.matchDate.toISOString() : new Date().toISOString(),
         };
       }
@@ -207,23 +209,25 @@ export function RecordMatchDialog() {
           Record Match
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-2">
           <DialogTitle>Record New Match</DialogTitle>
           <DialogDescription>Fill in the match details and scores below.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="flex flex-col space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+            {/* Match details row - Date and Type */}
+            <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="matchDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Match Date</FormLabel>
+                    <FormLabel className="text-xs">Match Date</FormLabel>
                     <FormControl>
                       <Input 
                         type="date"
+                        className="h-9"
                         value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
                         onChange={(e) => {
                           const date = e.target.value ? new Date(e.target.value) : new Date();
@@ -241,7 +245,7 @@ export function RecordMatchDialog() {
                 name="matchType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Match Type</FormLabel>
+                    <FormLabel className="text-xs">Match Type</FormLabel>
                     <Select
                       value={field.value}
                       onValueChange={(value) => {
@@ -253,7 +257,7 @@ export function RecordMatchDialog() {
                       }}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9">
                           <SelectValue placeholder="Select match type" />
                         </SelectTrigger>
                       </FormControl>
@@ -266,17 +270,21 @@ export function RecordMatchDialog() {
                   </FormItem>
                 )}
               />
-
-              {watchMatchType === 'doubles' && (
+            </div>
+            
+            {/* Team 1 */}
+            <div className="bg-slate-50 p-2 rounded-md">
+              <h4 className="text-sm font-semibold mb-2">Team 1</h4>
+              <div className="grid grid-cols-1 gap-2">
                 <FormField
                   control={form.control}
-                  name="player2"
+                  name="player1"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Team 1 - Player 2</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormLabel className="text-xs">Player 1</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="h-9">
                             <SelectValue placeholder="Select player" />
                           </SelectTrigger>
                         </FormControl>
@@ -292,81 +300,104 @@ export function RecordMatchDialog() {
                     </FormItem>
                   )}
                 />
-              )}
 
-              <FormField
-                control={form.control}
-                name="player3"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Team 2 - Player 1</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select player" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {players.map((player) => (
-                          <SelectItem key={player.id} value={player.id}>
-                            {player.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+                {watchMatchType === 'doubles' && (
+                  <FormField
+                    control={form.control}
+                    name="player2"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Player 2</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Select player" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {players.map((player) => (
+                              <SelectItem key={player.id} value={player.id}>
+                                {player.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 )}
-              />
-
-              {watchMatchType === 'doubles' && (
-                <FormField
-                  control={form.control}
-                  name="player4"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Team 2 - Player 2</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select player" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {players.map((player) => (
-                            <SelectItem key={player.id} value={player.id}>
-                              {player.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              </div>
             </div>
 
-            {/* TV-style Scoreboard */}
-            <div>
-              <FormLabel className="block mb-2 text-base text-center font-semibold tracking-wide">
-                Set Scores
-              </FormLabel>
-              <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 flex items-center justify-center mb-2">
-                <table
-                  className="w-full max-w-xs mx-auto border-separate"
-                  style={{ borderSpacing: "0.5rem" }}
-                >
+            {/* Team 2 */}
+            <div className="bg-slate-50 p-2 rounded-md">
+              <h4 className="text-sm font-semibold mb-2">Team 2</h4>
+              <div className="grid grid-cols-1 gap-2">
+                <FormField
+                  control={form.control}
+                  name="player3"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Player 1</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Select player" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {players.map((player) => (
+                            <SelectItem key={player.id} value={player.id}>
+                              {player.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {watchMatchType === 'doubles' && (
+                  <FormField
+                    control={form.control}
+                    name="player4"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Player 2</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Select player" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {players.map((player) => (
+                              <SelectItem key={player.id} value={player.id}>
+                                {player.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Compact Scoreboard */}
+            <div className="mt-3">
+              <FormLabel className="text-xs font-semibold block mb-1">Set Scores</FormLabel>
+              <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
+                <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr>
-                      <th className="px-2 text-center text-xs text-gray-500 font-semibold uppercase">
-                        TEAMS
-                      </th>
+                      <th className="pb-1 text-xs font-medium text-gray-500" style={{ width: "40%" }}>Team</th>
                       {setScores.map((_, i) => (
-                        <th
-                          key={"set-head-" + i}
-                          className="text-center text-xs font-bold text-gray-700"
-                        >
+                        <th key={"set-head-" + i} className="pb-1 text-xs font-medium text-gray-500 text-center">
                           Set {i + 1}
                         </th>
                       ))}
@@ -374,76 +405,44 @@ export function RecordMatchDialog() {
                   </thead>
                   <tbody>
                     <tr>
-                      <td
-                        className="pr-2 text-xs font-medium text-gray-700"
-                        style={{ width: "90px" }}
-                      >
+                      <td className="pr-2 text-xs font-medium">
                         {team1Name}
                       </td>
                       {setScores.map((set, idx) => {
                         const winner = getSetWinner(set.p1, set.p2);
-                        const isWinner =
-                          winner === "p1" &&
-                          !!set.p1 &&
-                          Number(set.p1) > Number(set.p2);
+                        const isWinner = winner === "p1" && !!set.p1 && Number(set.p1) > Number(set.p2);
                         return (
-                          <td key={"p1-set-" + idx}>
+                          <td key={"p1-set-" + idx} className="text-center">
                             <Input
                               inputMode="numeric"
-                              className={
-                                "w-12 text-center font-bold rounded border" +
-                                " border-gray-300 bg-white " +
-                                (isWinner
-                                  ? " bg-gray-200 border-gray-600 ring-2 ring-gray-500"
-                                  : "")
-                              }
-                              style={{
-                                fontWeight: isWinner ? 800 : 500,
-                                transition: "box-shadow 0.2s, border 0.2s",
-                              }}
+                              className={`w-10 h-7 text-center font-medium py-0 px-0 text-sm rounded ${
+                                isWinner ? "bg-gray-100 border-gray-500" : ""
+                              }`}
                               placeholder="0"
                               value={set.p1}
-                              onChange={(e) =>
-                                handleSetScoreChange(idx, "p1", e.target.value)
-                              }
+                              onChange={(e) => handleSetScoreChange(idx, "p1", e.target.value)}
                             />
                           </td>
                         );
                       })}
                     </tr>
                     <tr>
-                      <td
-                        className="pr-2 text-xs font-medium text-gray-700"
-                        style={{ width: "90px" }}
-                      >
+                      <td className="pr-2 pt-1 text-xs font-medium">
                         {team2Name}
                       </td>
                       {setScores.map((set, idx) => {
                         const winner = getSetWinner(set.p1, set.p2);
-                        const isWinner =
-                          winner === "p2" &&
-                          !!set.p2 &&
-                          Number(set.p2) > Number(set.p1);
+                        const isWinner = winner === "p2" && !!set.p2 && Number(set.p2) > Number(set.p1);
                         return (
-                          <td key={"p2-set-" + idx}>
+                          <td key={"p2-set-" + idx} className="text-center pt-1">
                             <Input
                               inputMode="numeric"
-                              className={
-                                "w-12 text-center font-bold rounded border" +
-                                " border-gray-300 bg-white " +
-                                (isWinner
-                                  ? " bg-gray-200 border-gray-600 ring-2 ring-gray-500"
-                                  : "")
-                              }
-                              style={{
-                                fontWeight: isWinner ? 800 : 500,
-                                transition: "box-shadow 0.2s, border 0.2s",
-                              }}
+                              className={`w-10 h-7 text-center font-medium py-0 px-0 text-sm rounded ${
+                                isWinner ? "bg-gray-100 border-gray-500" : ""
+                              }`}
                               placeholder="0"
                               value={set.p2}
-                              onChange={(e) =>
-                                handleSetScoreChange(idx, "p2", e.target.value)
-                              }
+                              onChange={(e) => handleSetScoreChange(idx, "p2", e.target.value)}
                             />
                           </td>
                         );
@@ -452,14 +451,16 @@ export function RecordMatchDialog() {
                   </tbody>
                 </table>
               </div>
-              <p className="text-xs text-muted-foreground text-center mb-2">
+              <p className="text-xs text-muted-foreground mt-1 mb-2">
                 Leave blank for sets that were not played.
               </p>
             </div>
-            <div className="flex justify-end space-x-2">
+
+            <div className="flex justify-end space-x-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={() => {
                   setOpen(false);
                   form.reset();
@@ -468,7 +469,7 @@ export function RecordMatchDialog() {
               >
                 Cancel
               </Button>
-              <Button type="submit">Record Match</Button>
+              <Button type="submit" size="sm">Record Match</Button>
             </div>
           </form>
         </Form>

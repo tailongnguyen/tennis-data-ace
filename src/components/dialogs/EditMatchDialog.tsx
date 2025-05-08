@@ -60,6 +60,15 @@ function determineMatchWinners(setScores: { p1: string; p2: string }[]): "p1" | 
   return p1Sets > p2Sets ? "p1" : "p2";
 }
 
+// Helper to normalize score to higher-lower format
+function normalizeScore(score: string): string {
+  const sets = score.split(',');
+  return sets.map(set => {
+    const [a, b] = set.split('-').map(Number);
+    return a >= b ? `${a}-${b}` : `${b}-${a}`;
+  }).join(',');
+}
+
 // Helper to parse a score string into set scores
 function parseScoreToSets(scoreString: string): { p1: string; p2: string }[] {
   // Initialize with empty sets
@@ -160,6 +169,9 @@ export function EditMatchDialog({ match, open, onOpenChange }: EditMatchDialogPr
         return;
       }
 
+      // Normalize score to ensure higher score comes first
+      const normalizedScore = normalizeScore(formattedScore);
+
       let matchData: Partial<CreateMatchData>;
 
       // Setup match data based on singles or doubles
@@ -170,7 +182,7 @@ export function EditMatchDialog({ match, open, onOpenChange }: EditMatchDialogPr
           loser1_id: matchWinner === "p1" ? values.player3 : values.player1,
           loser2_id: null,
           match_type: 'singles',
-          score: formattedScore,
+          score: normalizedScore,
           match_date: values.matchDate ? values.matchDate.toISOString() : new Date().toISOString(),
         };
       } else { // doubles
@@ -185,7 +197,7 @@ export function EditMatchDialog({ match, open, onOpenChange }: EditMatchDialogPr
           loser1_id: matchWinner === "p1" ? values.player3 : values.player1,
           loser2_id: matchWinner === "p1" ? values.player4 : values.player2,
           match_type: 'doubles',
-          score: formattedScore,
+          score: normalizedScore,
           match_date: values.matchDate ? values.matchDate.toISOString() : new Date().toISOString(),
         };
       }

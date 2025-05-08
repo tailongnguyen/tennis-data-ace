@@ -32,7 +32,12 @@ const Matches = () => {
   const [filterType, setFilterType] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   
-  const filteredMatches = matches.filter(match => {
+  // Sort matches by created_at in descending order (newest first)
+  const sortedMatches = [...matches].sort((a, b) => {
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+  
+  const filteredMatches = sortedMatches.filter(match => {
     if (filterType !== "all" && match.match_type !== filterType) {
       return false;
     }
