@@ -91,7 +91,10 @@ const Analytics = () => {
       const matchDate = normalizeDate(new Date(match.match_date));
       // Check if matchDate is between normStart and normEnd (inclusive)
       const isInTimeRange = matchDate >= normStart && matchDate <= normEnd;
-      if (!isInTimeRange) return false;
+      if (!isInTimeRange) {
+        console.log("Match date out of range:", matchDate, "Expected between", normStart, "and", normEnd);
+        return false;
+      } 
       if (selectedPlayer === "all") return true;
       return (
         match.winner1_id === selectedPlayer ||
@@ -531,7 +534,7 @@ const Analytics = () => {
     
     // Convert to data for stack area chart with both percentage and raw points
     return weekBuckets.map(week => {
-      const chartData = { name: week.name };
+      const chartData = { name: `${format(week.weekEnd, "MMM d")}` };
       let totalPoints = week.total;
 
       if (selectedPlayer !== "all") {
