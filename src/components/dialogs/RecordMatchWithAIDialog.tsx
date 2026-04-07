@@ -32,7 +32,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
 import OpenAI from "openai";
-const client = new OpenAI({ apiKey: "REDACTED_OPENAI_API_KEY" , dangerouslyAllowBrowser: true});
+const client = new OpenAI({ apiKey: import.meta.env.VITE_OPENAI_API_KEY , dangerouslyAllowBrowser: true});
 
 // Schema for the AI input form
 const aiInputSchema = z.object({
