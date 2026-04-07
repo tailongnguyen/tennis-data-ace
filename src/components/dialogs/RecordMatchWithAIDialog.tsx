@@ -31,6 +31,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
+import OpenAI from "openai";
+const client = new OpenAI({ apiKey: "REDACTED_OPENAI_API_KEY" , dangerouslyAllowBrowser: true});
+
 // Schema for the AI input form
 const aiInputSchema = z.object({
   matchInput: z.string().min(3, "Please enter at least one match description"),
@@ -126,6 +129,7 @@ export function RecordMatchWithAIDialog() {
           console.error("No Gemini API key found in database");
           toast.error("No Gemini API key found. Please add it to the database.");
         } else {
+          console.log("Gemini API key fetched:", data);
           setGeminiApiKey(data);
         }
       } catch (error) {
@@ -180,12 +184,12 @@ Input rules:
 5. Team delimiters for doubles: "/", ",", "and" or " " (e.g., "A/B", "A, B", "A and B" or just "A B").
 6. Score format is just a string of numbers and hyphens representing a single set (note that it is not necessary to have a winner).
 7. If multiple dates are present, each date applies to all matches listed after it, until another date line appears.
-
+8. Some players name could be shortened, for example: "HA" or "H.Anh" are short for "Hùng Anh", you have to guess the full name.
 Example:
   01/05/2025
   Khải 6-4 Hiệp
   01/06/2025
-  Long 4-6 Hải
+  Long Hải 4-6
   Thiện Hiệp - Phương Thành 5-5
 
 Output rules:
@@ -222,13 +226,18 @@ ${matchInput}
       `;
 
       // Generate content using the correct Gemini API
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: prompt,
-      });
-      const text_response = response.text;
+      // const response = await ai.models.generateContent({
+      //   model: "gemini-2.0-flash",
+      //   contents: prompt,
+      // });
+      // const text_response = response.text;
 
-      
+      const response = await client.responses.create({
+          model: "gpt-4.1-mini-2025-04-14",
+          input: prompt
+      });
+      const text_response = response.output_text;
+      console.log("text_response:", text_response);
       // Extract the JSON from the response
       let jsonStr = text_response;
       
